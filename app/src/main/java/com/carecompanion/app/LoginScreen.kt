@@ -11,6 +11,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,7 +26,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
@@ -44,6 +44,7 @@ import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -192,38 +193,35 @@ fun LoginScreen(onLoginClicked: (role: String, phone: String) -> Unit = { _, _ -
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
-                                Text(
-                                    text = "Welcome back",
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 22.sp,
-                                        color = TextPrimary,
-                                    ),
-                                )
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        text = "Welcome back",
+                                        style = MaterialTheme.typography.headlineSmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 26.sp,
+                                            letterSpacing = (-0.35).sp,
+                                            lineHeight = 30.sp,
+                                            color = TextPrimary,
+                                        ),
+                                    )
                                     Text(
                                         text = "Sign in with your mobile number",
-                                        modifier = Modifier.weight(1f),
-                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                        style = MaterialTheme.typography.bodyLarge.copy(
                                             fontWeight = FontWeight.Medium,
-                                            color = TextSecondary,
                                             fontSize = 15.sp,
-                                            lineHeight = 20.sp,
+                                            lineHeight = 22.sp,
+                                            color = TextSecondary,
                                         ),
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                    StatusChip(
-                                        text = "Secure login\nvia OTP",
-                                        modifier = Modifier.widthIn(min = 120.dp),
                                     )
                                 }
+                                LoginTrustBadge()
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(top = 2.dp),
+                                    color = FieldBorder.copy(alpha = 0.85f),
+                                    thickness = 1.dp,
+                                )
                             }
 
                             Text(
@@ -463,25 +461,36 @@ private fun LoginHero(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun StatusChip(text: String, modifier: Modifier = Modifier) {
+private fun LoginTrustBadge(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(999.dp),
         color = ChipBg,
+        border = BorderStroke(1.dp, SoftBlue.copy(alpha = 0.28f)),
     ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            style = MaterialTheme.typography.labelMedium.copy(
-                color = DeepNavy,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 11.sp,
-                lineHeight = 14.sp,
-                letterSpacing = 0.sp,
-            ),
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Lock,
+                contentDescription = null,
+                tint = SoftBlue,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = "OTP-protected sign-in",
+                style = MaterialTheme.typography.labelLarge.copy(
+                    color = DeepNavy,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp,
+                    letterSpacing = 0.sp,
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -584,31 +593,31 @@ private fun PhoneFloatingField(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Box(modifier = Modifier.width(134.dp)) {
+        Box(modifier = Modifier.width(92.dp)) {
             OutlinedTextField(
                 value = selectedDial.code,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Code", style = LocalTextStyle.current.copy(fontSize = 12.sp)) },
+                label = { Text("Code", style = LocalTextStyle.current.copy(fontSize = 11.sp)) },
                 trailingIcon = {
                     IconButton(
                         onClick = { onCountryMenuExpandedChange(!countryMenuExpanded) },
-                        modifier = Modifier.size(42.dp),
+                        modifier = Modifier.size(36.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowDropDown,
                             contentDescription = "Open country code menu",
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(18.dp),
                         )
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 58.dp),
+                    .heightIn(min = 56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = outlinedFieldColors(),
                 textStyle = LocalTextStyle.current.copy(
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = TextPrimary,
                 ),
@@ -633,11 +642,19 @@ private fun PhoneFloatingField(
         OutlinedTextField(
             value = phone,
             onValueChange = onPhoneChange,
-            label = { Text("Mobile number") },
+            label = {
+                Text(
+                    "Mobile",
+                    style = LocalTextStyle.current.copy(fontSize = 13.sp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            },
             placeholder = { Text("Enter your number", color = TextMuted) },
             modifier = Modifier
                 .weight(1f)
-                .heightIn(min = 58.dp),
+                .fillMaxWidth()
+                .heightIn(min = 56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = outlinedFieldColors(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),

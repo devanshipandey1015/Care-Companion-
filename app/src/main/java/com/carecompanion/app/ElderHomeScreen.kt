@@ -1,5 +1,7 @@
 package com.carecompanion.app
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -57,16 +59,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.Dp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 import com.carecompanion.app.ui.theme.CareCompanionTheme
-import com.carecompanion.app.ui.theme.CareGreen
 import com.carecompanion.app.ui.components.CareGlassLanguageDropdown
 import kotlinx.coroutines.launch
 import android.widget.Toast
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.platform.LocalContext
 
 private val ElderPageBg = Color(0xFFF5F7FB)
@@ -84,6 +86,7 @@ private fun tr(lang: ElderLanguage, key: String): String {
             "medicines" -> "Medicines"
             "vitals" -> "Vitals"
             "contacts" -> "Contacts"
+            "tap_to_call" -> "Tap to call"
             "entertainment" -> "Entertainment"
             "status_at_home" -> "Status: At home"
             "sos_hint" -> "Press and hold for emergency"
@@ -153,6 +156,7 @@ private fun tr(lang: ElderLanguage, key: String): String {
             "medicines" -> "दवाइयाँ"
             "vitals" -> "वाइटल्स"
             "contacts" -> "संपर्क"
+            "tap_to_call" -> "कॉल करने के लिए टैप करें"
             "entertainment" -> "मनोरंजन"
             "status_at_home" -> "स्थिति: घर पर"
             "sos_hint" -> "आपातकाल के लिए दबाकर रखें"
@@ -222,6 +226,7 @@ private fun tr(lang: ElderLanguage, key: String): String {
             "medicines" -> "औषधे"
             "vitals" -> "वाइटल्स"
             "contacts" -> "संपर्क"
+            "tap_to_call" -> "कॉल करण्यासाठी टॅप करा"
             "entertainment" -> "मनोरंजन"
             "status_at_home" -> "स्थिती: घरी"
             "sos_hint" -> "आपत्कालीनसाठी दाबून ठेवा"
@@ -291,6 +296,7 @@ private fun tr(lang: ElderLanguage, key: String): String {
             "medicines" -> "દવાઓ"
             "vitals" -> "વાઇટલ્સ"
             "contacts" -> "સંપર્કો"
+            "tap_to_call" -> "કૉલ માટે ટેપ કરો"
             "entertainment" -> "મનોરંજન"
             "status_at_home" -> "સ્થિતિ: ઘરે"
             "sos_hint" -> "આપત્કાલ માટે દબાવી રાખો"
@@ -367,10 +373,38 @@ sealed class ElderDestination {
     object Settings    : ElderDestination()
 }
 
+private fun contactInitials(name: String): String {
+    val parts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+    return when {
+        parts.isEmpty() -> "?"
+        parts.size == 1 -> parts[0].take(2).uppercase(Locale.getDefault())
+        else ->
+            "${parts[0].first()}${parts[1].first()}".uppercase(Locale.getDefault())
+    }
+}
+
+private fun dialString(raw: String): String =
+    raw.trim().filter { it.isDigit() || it == '+' }
+
+private fun formatContactPhone(raw: String): String {
+    val trimmed = raw.trim()
+    if (trimmed.isEmpty()) return "—"
+    val digits = trimmed.filter { it.isDigit() }
+    return when {
+        digits.length == 10 ->
+            "(${digits.take(3)}) ${digits.drop(3).take(3)}-${digits.drop(6)}"
+        digits.length == 11 && digits.startsWith("1") -> {
+            val d = digits.drop(1)
+            "+1 (${d.take(3)}) ${d.drop(3).take(3)}-${d.drop(6)}"
+        }
+        else -> trimmed
+    }
+}
+
 private data class ContactPerson(
     val name: String,
-    val avatarIcon: ImageVector,
-    val avatarBg: Color
+    val phone: String,
+    val avatarBg: Color,
 )
 
 private enum class OttCategory {
@@ -595,13 +629,13 @@ private fun ElderTopBar(
         ) {
             IconButton(
                 onClick = onMenuClick,
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(52.dp),
             ) {
                 Icon(
                     Icons.Filled.Menu,
                     contentDescription = tr(lang, "menu"),
                     tint = ElderNavy,
-                    modifier = Modifier.size(30.dp),
+                    modifier = Modifier.size(28.dp),
                 )
             }
 
@@ -609,11 +643,12 @@ private fun ElderTopBar(
                 text = tr(lang, "elder_app_title"),
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 6.dp),
-                fontSize = 18.sp,
+                    .padding(horizontal = 4.dp),
+                fontSize = 16.sp,
+                lineHeight = 19.sp,
                 fontWeight = FontWeight.Bold,
                 color = ElderNavy,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
             )
@@ -621,13 +656,13 @@ private fun ElderTopBar(
             Box {
                 IconButton(
                     onClick = { expanded = true },
-                    modifier = Modifier.size(52.dp),
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         Icons.Outlined.Translate,
                         contentDescription = tr(lang, "language"),
                         tint = ElderSoftBlue,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(26.dp),
                     )
                 }
                 CareGlassLanguageDropdown(
@@ -647,25 +682,25 @@ private fun ElderTopBar(
                         Toast.LENGTH_SHORT,
                     ).show()
                 },
-                modifier = Modifier.size(52.dp),
+                modifier = Modifier.size(48.dp),
             ) {
                 Icon(
                     Icons.Outlined.Notifications,
                     contentDescription = "Notifications",
                     tint = ElderNavy.copy(alpha = 0.75f),
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(26.dp),
                 )
             }
 
             IconButton(
                 onClick = onLogout,
-                modifier = Modifier.size(52.dp),
+                modifier = Modifier.size(48.dp),
             ) {
                 Icon(
                     Icons.Outlined.Logout,
                     contentDescription = "Logout",
                     tint = ElderEmergency,
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(26.dp),
                 )
             }
         }
@@ -1586,6 +1621,9 @@ private fun ActionCard(
     tint: Color,
     bg: Color,
     modifier: Modifier = Modifier,
+    labelFontSize: TextUnit = 20.sp,
+    iconBoxDp: Dp = 88.dp,
+    iconDp: Dp = 48.dp,
     onClick: () -> Unit,
 ) {
     Box(
@@ -1621,23 +1659,27 @@ private fun ActionCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(88.dp)
+                        .size(iconBoxDp)
                         .shadow(8.dp, RoundedCornerShape(22.dp), spotColor = tint.copy(alpha = 0.14f))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(bg.copy(alpha = 0.94f)),
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(bg.copy(alpha = 0.98f), bg.copy(alpha = 0.72f)),
+                            ),
+                        ),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         icon,
                         contentDescription = label,
                         tint = tint,
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(iconDp),
                     )
                 }
             }
             Text(
                 text = label,
-                fontSize = 20.sp,
+                fontSize = labelFontSize,
                 fontWeight = FontWeight.Bold,
                 color = ElderNavy,
                 textAlign = TextAlign.Center,
@@ -1727,18 +1769,10 @@ fun MedicinesScreen(
             )
         }
 
-        val contentModifier = if (step == 0) {
-            Modifier
-                .fillMaxWidth()
-                .height(470.dp)
-        } else {
-            Modifier
+        Box(
+            modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-        }
-
-        Box(
-            modifier = contentModifier
                 .shadow(6.dp, RoundedCornerShape(22.dp), ambientColor = Color.Black.copy(0.06f))
                 .clip(RoundedCornerShape(22.dp))
                 .background(Color.White)
@@ -1746,7 +1780,10 @@ fun MedicinesScreen(
         ) {
             when (step) {
                 0 -> {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         Text(
                             text = tr(lang, "todays_medicines"),
                             fontSize = 24.sp,
@@ -1754,40 +1791,66 @@ fun MedicinesScreen(
                             color = Color(0xFF2A2A2A)
                         )
                         medicines.forEachIndexed { i, med ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0xFFF8F8F8))
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, ElderSoftBlue.copy(alpha = 0.16f)),
+                                shadowElevation = 0.dp,
+                                tonalElevation = 0.dp,
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(42.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(med.color),
-                                    contentAlignment = Alignment.Center
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Icon(
-                                        imageVector = med.icon,
-                                        contentDescription = med.name,
-                                        tint = Color(0xFF6B4D00),
-                                        modifier = Modifier.size(24.dp)
+                                    Box(
+                                        modifier = Modifier
+                                            .size(52.dp)
+                                            .clip(RoundedCornerShape(14.dp))
+                                            .background(
+                                                Brush.linearGradient(
+                                                    colors = listOf(
+                                                        med.color.copy(alpha = 0.95f),
+                                                        med.color.copy(alpha = 0.65f),
+                                                    ),
+                                                ),
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = med.icon,
+                                            contentDescription = med.name,
+                                            tint = ElderNavy.copy(alpha = 0.82f),
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "${i + 1}. ${med.name}",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color(0xFF2E2E2E),
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                            lineHeight = 22.sp,
+                                        )
+                                        Text(
+                                            text = "${med.timeInstruction} · ${med.withInstruction}",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFF707990),
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                    Text(
+                                        text = String.format(Locale.getDefault(), tr(lang, "qty_fmt"), med.quantity),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = ElderSoftBlue,
                                     )
                                 }
-                                Spacer(Modifier.width(10.dp))
-                                Text(
-                                    text = "${i + 1}. ${med.name}",
-                                    fontSize = 18.sp,
-                                    color = Color(0xFF2E2E2E),
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(
-                                    text = String.format(Locale.getDefault(), tr(lang, "qty_fmt"), med.quantity),
-                                    fontSize = 16.sp,
-                                    color = Color(0xFF666666)
-                                )
                             }
                         }
                         Spacer(modifier = Modifier.weight(1f))
@@ -1803,7 +1866,10 @@ fun MedicinesScreen(
                                 .fillMaxWidth()
                                 .height(56.dp),
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4C8BD9))
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ElderSoftBlue,
+                                contentColor = Color.White,
+                            )
                         ) {
                             Text(tr(lang, "start_taking"), fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                         }
@@ -1820,7 +1886,10 @@ fun MedicinesScreen(
                         label = "medicine_slide"
                     ) { animatedIndex ->
                         val med = medicines[animatedIndex]
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
                             Text(
                                 text = String.format(
                                     Locale.getDefault(),
@@ -1961,7 +2030,10 @@ fun MedicinesScreen(
                                     .fillMaxWidth()
                                     .height(56.dp),
                                 shape = RoundedCornerShape(14.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4C8BD9))
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ElderSoftBlue,
+                                    contentColor = Color.White,
+                                )
                             ) {
                                 Text(
                                     text = if (animatedIndex < medicines.lastIndex) {
@@ -2159,6 +2231,7 @@ private fun ContactListScreen(
     onNavigate: (ElderDestination) -> Unit
 ) {
     val lang = LocalElderLanguage.current
+    val ctx = LocalContext.current
     val contacts = remember(elderContacts) {
         if (elderContacts.isNotEmpty()) {
             elderContacts.mapIndexed { i, c ->
@@ -2166,15 +2239,22 @@ private fun ContactListScreen(
                     Color(0xFFE3F2FD), Color(0xFFFCE4EC), Color(0xFFE8F5E9),
                     Color(0xFFF3E5F5), Color(0xFFFFF3E0), Color(0xFFE0F2F1)
                 )
-                ContactPerson(c.name, Icons.Outlined.Person, colors[i % colors.size])
+                ContactPerson(c.name, c.phone.ifBlank { "" }, colors[i % colors.size])
             }
         } else {
             listOf(
-                ContactPerson("Aarav", Icons.Outlined.Person, Color(0xFFE3F2FD)),
-                ContactPerson("Riya", Icons.Outlined.Person, Color(0xFFFCE4EC)),
-                ContactPerson("Meera", Icons.Outlined.Person, Color(0xFFE8F5E9)),
-                ContactPerson("Rahul", Icons.Outlined.Person, Color(0xFFF3E5F5))
+                ContactPerson("Aarav", "+15550101", Color(0xFFE3F2FD)),
+                ContactPerson("Riya", "+15550102", Color(0xFFFCE4EC)),
+                ContactPerson("Meera", "+15550103", Color(0xFFE8F5E9)),
+                ContactPerson("Rahul", "+15550104", Color(0xFFF3E5F5)),
             )
+        }
+    }
+
+    fun dialPerson(person: ContactPerson) {
+        val n = dialString(person.phone)
+        if (n.isNotEmpty()) {
+            ctx.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$n")))
         }
     }
     val contactRows = remember(contacts) { contacts.chunked(2) }
@@ -2234,13 +2314,13 @@ private fun ContactListScreen(
                         ContactCard(
                             person = row[0],
                             modifier = Modifier.weight(1f),
-                            onCallClick = {}
+                            onCallClick = { dialPerson(row[0]) },
                         )
                         if (row.size > 1) {
                             ContactCard(
                                 person = row[1],
                                 modifier = Modifier.weight(1f),
-                                onCallClick = {}
+                                onCallClick = { dialPerson(row[1]) },
                             )
                         } else {
                             Spacer(modifier = Modifier.weight(1f))
@@ -2815,67 +2895,123 @@ private fun ContactCard(
     modifier: Modifier = Modifier,
     onCallClick: () -> Unit
 ) {
-    Box(
+    val lang = LocalElderLanguage.current
+    Column(
         modifier = modifier
-            .height(182.dp)
-            .shadow(4.dp, RoundedCornerShape(18.dp), ambientColor = Color.Black.copy(0.05f))
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color(0xFFFBFBFB))
-            .padding(10.dp)
+            .shadow(
+                6.dp,
+                RoundedCornerShape(20.dp),
+                ambientColor = ElderNavy.copy(alpha = 0.06f),
+                spotColor = ElderSoftBlue.copy(alpha = 0.12f),
+            )
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.White)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(118.dp)
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            person.avatarBg.copy(alpha = 0.95f),
+                            ElderSoftBlue.copy(alpha = 0.2f),
+                            person.avatarBg.copy(alpha = 0.58f),
+                        ),
+                    ),
+                ),
+            contentAlignment = Alignment.Center,
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(102.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(person.avatarBg),
-                contentAlignment = Alignment.Center
+                    .size(76.dp)
+                    .shadow(4.dp, CircleShape, spotColor = Color.Black.copy(alpha = 0.1f))
+                    .border(3.dp, Color.White.copy(alpha = 0.92f), CircleShape)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.96f)),
+                contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = person.avatarIcon,
-                    contentDescription = person.name,
-                    tint = Color(0xFF3D3D3D),
-                    modifier = Modifier.size(56.dp)
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = onCallClick,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFE8F5E9))
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Call,
-                        contentDescription = "Call ${person.name}",
-                        tint = CareGreen,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(Modifier.width(6.dp))
                 Text(
-                    text = person.name,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1E1E1E),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    text = contactInitials(person.name),
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ElderNavy,
                 )
             }
         }
 
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = person.name,
+                fontSize = 21.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1C1C1C),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 25.sp,
+            )
+            Text(
+                text = formatContactPhone(person.phone),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF5C6578),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 10.dp, end = 10.dp, bottom = 12.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .border(1.dp, ElderSoftBlue.copy(alpha = 0.28f), RoundedCornerShape(14.dp))
+                .background(ElderSoftBlue.copy(alpha = 0.12f))
+                .clickable(onClick = onCallClick)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Call,
+                    contentDescription = null,
+                    tint = ElderSoftBlue,
+                    modifier = Modifier.size(28.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = tr(lang, "tap_to_call"),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = ElderNavy.copy(alpha = 0.62f),
+                    )
+                    Text(
+                        text = formatContactPhone(person.phone),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = ElderNavy,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = ElderSoftBlue.copy(alpha = 0.78f),
+                modifier = Modifier.size(22.dp),
+            )
+        }
     }
 }
 
@@ -2986,8 +3122,13 @@ private fun FooterNavCard(
         label = meta.label,
         tint = meta.tint,
         bg = meta.bg,
-        modifier = modifier.height(200.dp),
-        onClick = { onNavigate(destination) }
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(0.92f),
+        labelFontSize = 16.sp,
+        iconBoxDp = 72.dp,
+        iconDp = 40.dp,
+        onClick = { onNavigate(destination) },
     )
 }
 

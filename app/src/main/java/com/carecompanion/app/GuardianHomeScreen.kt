@@ -482,9 +482,31 @@ private fun ProfileChoiceCard(
         Box(
             modifier = Modifier
                 .size(92.dp)
-                .shadow(4.dp, CircleShape, spotColor = profile.bg.copy(alpha = 0.45f))
+                .shadow(6.dp, CircleShape, spotColor = profile.bg.copy(alpha = if (selected) 0.55f else 0.35f))
                 .clip(CircleShape)
-                .background(profile.bg, CircleShape),
+                .border(
+                    width = if (selected) 2.5.dp else 1.dp,
+                    brush = if (selected) {
+                        Brush.linearGradient(
+                            colors = listOf(Color.White.copy(alpha = 0.95f), SoftBlue.copy(alpha = 0.88f), MintGreen.copy(alpha = 0.75f)),
+                        )
+                    } else {
+                        Brush.linearGradient(
+                            colors = listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0.25f)),
+                        )
+                    },
+                    shape = CircleShape,
+                )
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.48f),
+                            profile.bg.copy(alpha = 0.94f),
+                            profile.bg.copy(alpha = 0.62f),
+                        ),
+                    ),
+                    shape = CircleShape,
+                ),
             contentAlignment = Alignment.Center,
         ) {
             if (profile.photoUri != null) {
