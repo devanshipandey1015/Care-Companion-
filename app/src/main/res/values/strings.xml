@@ -30,4 +30,13 @@
     <string name="guardian_contact_no_phone">No phone number on this contact</string>
     <string name="guardian_contacts_permission">Contacts permission is required to import</string>
     <string name="guardian_unnamed_profile">Unnamed profile</string>
+    <string name="guardian_add_another_contact">Add another contact</string>
+    <string name="guardian_remove_contact">Remove contact</string>
+    <string name="guardian_error_phone_short">Enter at least 10 digits for this number.</string>
+    <string name="guardian_error_emergency_incomplete">Please enter both name and phone.</string>
+    <string name="guardian_error_emergency_phone_short">Emergency phone needs at least 10 digits.</string>
+    <string name="guardian_section_personal_hint">Photo and how we\'ll greet them</string>
+    <string name="guardian_section_contact_hint">Their primary mobile number</string>
+    <string name="guardian_section_emergency_hint">Trusted people we can reach quickly</string>
+    <string name="guardian_progress_hint">Complete each section below — your progress updates as you go.</string>
 </resources>

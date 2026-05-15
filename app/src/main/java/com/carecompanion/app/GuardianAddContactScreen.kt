@@ -47,6 +47,9 @@ fun GuardianAddContactScreen(
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var photoUri by remember { mutableStateOf<Uri?>(null) }
+    var relationship by remember { mutableStateOf("") }
+    var isEmergencyContact by remember { mutableStateOf(false) }
+    var isFavorite by remember { mutableStateOf(false) }
     var snackMsg by remember { mutableStateOf<String?>(null) }
 
     val photoPicker = rememberLauncherForActivityResult(
@@ -196,6 +199,44 @@ fun GuardianAddContactScreen(
                             },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
                         )
+                        GuardianTextField(
+                            value = relationship,
+                            onValueChange = { relationship = it },
+                            label = "Relationship (optional)",
+                            leadingIcon = {
+                                Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(20.dp))
+                            },
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("ICE / emergency contact", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = GuardianTextPrimary)
+                                Text("Shown in SOS & alert flows", fontSize = 12.sp, color = GuardianTextSub)
+                            }
+                            Switch(
+                                checked = isEmergencyContact,
+                                onCheckedChange = { isEmergencyContact = it },
+                                colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = CareGreen),
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Favorite", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = GuardianTextPrimary)
+                                Text("Pinned at the top of your list", fontSize = 12.sp, color = GuardianTextSub)
+                            }
+                            Switch(
+                                checked = isFavorite,
+                                onCheckedChange = { isFavorite = it },
+                                colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = CareGreen),
+                            )
+                        }
                     }
                 }
 
@@ -235,7 +276,16 @@ fun GuardianAddContactScreen(
                     text = "Save Contact",
                     onClick = {
                         if (name.isNotBlank() && phone.isNotBlank()) {
-                            onSave(ManagedContact(name.trim(), phone.trim(), photoUri))
+                            onSave(
+                                ManagedContact(
+                                    name = name.trim(),
+                                    phone = phone.trim(),
+                                    photoUri = photoUri,
+                                    relationship = relationship.trim(),
+                                    isEmergencyContact = isEmergencyContact,
+                                    isFavorite = isFavorite,
+                                ),
+                            )
                         } else {
                             snackMsg = "Please enter name and phone"
                         }

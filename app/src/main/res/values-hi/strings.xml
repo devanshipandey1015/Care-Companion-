@@ -30,4 +30,13 @@
     <string name="guardian_contact_no_phone">इस संपर्क पर फ़ोन नंबर नहीं है</string>
     <string name="guardian_contacts_permission">आयात के लिए संपर्क अनुमति आवश्यक है</string>
     <string name="guardian_unnamed_profile">बिना नाम की प्रोफ़ाइल</string>
+    <string name="guardian_add_another_contact">एक और संपर्क जोड़ें</string>
+    <string name="guardian_remove_contact">संपर्क हटाएँ</string>
+    <string name="guardian_error_phone_short">इस नंबर के लिए कम से कम 10 अंक दर्ज करें।</string>
+    <string name="guardian_error_emergency_incomplete">कृपया नाम और फ़ोन दोनों भरें।</string>
+    <string name="guardian_error_emergency_phone_short">आपातकालीन फ़ोन में कम से कम 10 अंक चाहिए।</string>
+    <string name="guardian_section_personal_hint">फ़ोटो और अभिवादन का नाम</string>
+    <string name="guardian_section_contact_hint">उनका मुख्य मोबाइल नंबर</string>
+    <string name="guardian_section_emergency_hint">विश्वसनीय लोग जिन्हें हम जल्दी संपर्क कर सकें</string>
+    <string name="guardian_progress_hint">नीचे प्रत्येक भाग पूरा करें — आपकी प्रगति अपने आप अपडेट होती है।</string>
 </resources>

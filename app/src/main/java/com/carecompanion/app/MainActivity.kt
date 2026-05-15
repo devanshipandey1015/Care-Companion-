@@ -1,6 +1,9 @@
 package com.carecompanion.app
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -40,9 +43,16 @@ class MainActivity : ComponentActivity() {
                     when (val s = screen) {
 
                         is AppScreen.Login -> {
-                            LoginScreen { role, _ ->
+                            LoginScreen { role, phone ->
+                                val trimmed = phone.trim()
+                                val elderLabel =
+                                    when {
+                                        trimmed.isEmpty() -> "Sunita"
+                                        trimmed.length > 24 -> trimmed.take(21) + "…"
+                                        else -> trimmed
+                                    }
                                 screen = when {
-                                    role.contains("Elder", ignoreCase = true)    -> AppScreen.ElderHome("Sunita")
+                                    role.contains("Elder", ignoreCase = true)    -> AppScreen.ElderHome(elderLabel)
                                     role.contains("Guardian", ignoreCase = true) -> AppScreen.GuardianHome
                                     else                                          -> AppScreen.Login
                                 }
@@ -50,11 +60,39 @@ class MainActivity : ComponentActivity() {
                         }
 
                         is AppScreen.ElderHome -> {
+                            val elderContacts by remember {
+                                derivedStateOf {
+                                    val fromGuardian =
+                                        guardianProfiles.firstOrNull()?.let { contactsByProfile[it.name] }.orEmpty()
+                                    fromGuardian.ifEmpty { contactsByProfile[s.name].orEmpty() }
+                                }
+                            }
                             ElderHomeScreen(
-                                elderName    = s.name,
-                                onSosPressed = {},
-                                onLogout     = { screen = AppScreen.Login },
-                                elderContacts = contactsByProfile[s.name].orEmpty()
+                                elderName = s.name,
+                                onSosPressed = {
+                                    val merged =
+                                        guardianProfiles.firstOrNull()?.let { contactsByProfile[it.name] }.orEmpty()
+                                            .ifEmpty { contactsByProfile[s.name].orEmpty() }
+                                    val digits =
+                                        merged.firstOrNull()?.phone?.trim()?.filter { ch -> ch.isDigit() || ch == '+' }
+                                    val uri =
+                                        if (!digits.isNullOrBlank()) {
+                                            Uri.parse("tel:${Uri.encode(digits)}")
+                                        } else {
+                                            Uri.parse("tel:${Uri.encode("112")}")
+                                        }
+                                    runCatching {
+                                        startActivity(Intent(Intent.ACTION_DIAL, uri))
+                                    }.onFailure {
+                                        Toast.makeText(
+                                            this@MainActivity,
+                                            "Unable to open the phone app.",
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                    }
+                                },
+                                onLogout = { screen = AppScreen.Login },
+                                elderContacts = elderContacts,
                             )
                         }
 
@@ -98,6 +136,7 @@ class MainActivity : ComponentActivity() {
                                 onBack          = { screen = AppScreen.GuardianManageElder(s.profile) },
                                 onSaveContacts  = { updated -> contactsByProfile[s.profile.name] = updated },
                                 onAddContact    = { screen = AppScreen.GuardianAddContact(s.profile) },
+                                onOpenAlerts    = { screen = AppScreen.GuardianWellnessSos(s.profile) },
                                 onLogout        = { screen = AppScreen.Login }
                             )
                         }

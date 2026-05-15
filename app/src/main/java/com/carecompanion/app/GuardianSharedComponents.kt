@@ -14,17 +14,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carecompanion.app.ui.theme.CareGreen
+import com.carecompanion.app.ui.theme.CarePalette
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-val GuardianBg          = Color(0xFFF4F6F4)
+val GuardianBg          = CarePalette.SurfaceMuted
 val GuardianPrimary     = CareGreen
 val GuardianTextPrimary = Color(0xFF1C1C1C)
 val GuardianTextSub     = Color(0xFF666666)
@@ -42,20 +45,33 @@ fun GuardianBottomBar(
     activeTab: BottomTab = BottomTab.Home,
     onHome: () -> Unit = {},
     onAlerts: () -> Unit = {},
-    onSettings: () -> Unit = {}
+    onSettings: () -> Unit = {},
 ) {
-    Surface(color = Color.White, shadowElevation = 16.dp, tonalElevation = 0.dp) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
+            shadowElevation = 16.dp,
+            tonalElevation = 0.dp,
+            color = Color.White,
         ) {
-            BottomNavItem(Icons.Outlined.Home, "Home", activeTab == BottomTab.Home, onHome)
-            BottomNavItem(Icons.Outlined.Notifications, "Alerts", activeTab == BottomTab.Alerts, onAlerts)
-            BottomNavItem(Icons.Outlined.Settings, "Settings", activeTab == BottomTab.Settings, onSettings)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BottomNavItem(Icons.Outlined.Home, "Home", activeTab == BottomTab.Home, onHome)
+                BottomNavItem(Icons.Outlined.Notifications, "Alerts", activeTab == BottomTab.Alerts, onAlerts)
+                BottomNavItem(Icons.Outlined.Settings, "Settings", activeTab == BottomTab.Settings, onSettings)
+            }
         }
     }
 }
@@ -65,22 +81,50 @@ private fun BottomNavItem(
     icon: ImageVector,
     label: String,
     active: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
-    val tint = if (active) GuardianPrimary else Color(0xFF8A8A8A)
+    val inactiveTint = Color(0xFF8F96A8)
+    val tint = if (active) GuardianPrimary else inactiveTint
+    val pillShape = RoundedCornerShape(22.dp)
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(if (active) CareGreen.copy(alpha = 0.10f) else Color.Transparent)
+            .shadow(
+                elevation = if (active) 10.dp else 0.dp,
+                shape = pillShape,
+                spotColor = Color(0xFF2563EB).copy(alpha = if (active) 0.38f else 0f),
+                ambientColor = CareGreen.copy(alpha = if (active) 0.28f else 0f),
+            )
+            .clip(pillShape)
+            .then(
+                if (active) {
+                    Modifier.background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color(0xFF4EA8DE).copy(alpha = 0.26f),
+                                CareGreen.copy(alpha = 0.18f),
+                            ),
+                        ),
+                    )
+                } else {
+                    Modifier.background(Color.Transparent)
+                },
+            )
             .clickable(onClick = onClick)
-            .padding(horizontal = 22.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(22.dp))
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(26.dp))
             Text(
-                label, fontSize = 10.sp, color = tint,
-                fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
+                label,
+                fontSize = 11.sp,
+                color = tint,
+                fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -120,9 +164,9 @@ fun GradientPageHeader(
             }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (subtitle.isNotBlank())
-                    Text(subtitle, fontSize = 13.sp, color = Color.White.copy(alpha = 0.8f))
+                    Text(subtitle, fontSize = 13.sp, color = Color.White.copy(alpha = 0.8f), maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
             actions()
         }
@@ -168,8 +212,8 @@ fun ElderStatusCard(
                 }
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(profile.name, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Text(statusText, fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
+                Text(profile.name, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(statusText, fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f), maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             if (isSafe) {
                 Surface(shape = RoundedCornerShape(20.dp), color = CareGreen) {

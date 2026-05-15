@@ -3,22 +3,31 @@ package com.carecompanion.app
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.*
@@ -31,11 +40,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -44,14 +57,24 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.carecompanion.app.ui.theme.CareCompanionTheme
-import com.carecompanion.app.ui.theme.CareGreen
-import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
-enum class ElderLanguage { ENGLISH, HINDI, MARATHI, GUJARATI }
+import com.carecompanion.app.ui.theme.CareCompanionTheme
+import com.carecompanion.app.ui.theme.CareGreen
+import com.carecompanion.app.ui.components.CareGlassLanguageDropdown
+import kotlinx.coroutines.launch
+import android.widget.Toast
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.platform.LocalContext
 
-private val LocalElderLanguage = compositionLocalOf { ElderLanguage.ENGLISH }
+private val ElderPageBg = Color(0xFFF5F7FB)
+private val ElderNavy = Color(0xFF14213D)
+private val ElderSoftBlue = Color(0xFF4EA8DE)
+private val ElderMint = Color(0xFF7BD389)
+private val ElderEmergency = Color(0xFFFF4D4D)
+private val ElderCard = Color.White
 
 private fun tr(lang: ElderLanguage, key: String): String {
     return when (lang) {
@@ -66,6 +89,28 @@ private fun tr(lang: ElderLanguage, key: String): String {
             "sos_hint" -> "Press and hold for emergency"
             "ott" -> "OTT"
             "tap_open" -> "Tap to open"
+            "ott_home_title" -> "Watch & listen"
+            "ott_home_sub" -> "Simple picks · Big taps"
+            "voice_assistant" -> "Voice assistant"
+            "voice_assistant_hint" -> "Say what you want — bhajan, news, or a movie"
+            "cat_all" -> "All"
+            "cat_movies" -> "Movies"
+            "cat_music" -> "Music"
+            "cat_spiritual" -> "Spiritual"
+            "cat_news" -> "News"
+            "cat_kids" -> "Kids"
+            "recent_played" -> "Recently played"
+            "recommended" -> "Recommended for you"
+            "browse_apps" -> "Your apps"
+            "bigtap_footer" -> "Large buttons · High contrast text"
+            "plat_youtube" -> "YouTube"
+            "plat_music" -> "Music"
+            "plat_movies" -> "Movies"
+            "plat_tv" -> "TV shows"
+            "plat_news" -> "News"
+            "plat_podcasts" -> "Podcasts"
+            "plat_spiritual" -> "Spiritual & calm"
+            "plat_kids" -> "Kids corner"
             "coming_soon" -> "Coming soon"
             "language" -> "Language"
             "take_medicine_title" -> "Take medicine"
@@ -85,6 +130,21 @@ private fun tr(lang: ElderLanguage, key: String): String {
             "qty_fmt" -> "Qty %d"
             "elder_back" -> "Back"
             "sos_main" -> "SOS"
+            "elder_app_title" -> "Care Companion"
+            "weather_demo" -> "72°F · Pleasant skies"
+            "daily_health_demo" -> "You're steady today · Sip water often"
+            "health_chip" -> "Doing well"
+            "med_preview_title" -> "Next medicine"
+            "med_preview_demo" -> "Lorazepam · After lunch"
+            "sos_reassurance" -> "Stay calm — help is arranged only after you confirm."
+            "settings" -> "Settings"
+            "drawer_section_health" -> "Health"
+            "drawer_section_safety" -> "Safety"
+            "drawer_section_entertainment" -> "Entertainment"
+            "drawer_section_settings" -> "Settings"
+            "drawer_you" -> "Signed in"
+            "drawer_quick_sos" -> "Quick SOS"
+            "drawer_quick_sos_sub" -> "Emergency · Opens alert flow"
             else -> key
         }
         ElderLanguage.HINDI -> when (key) {
@@ -98,6 +158,28 @@ private fun tr(lang: ElderLanguage, key: String): String {
             "sos_hint" -> "आपातकाल के लिए दबाकर रखें"
             "ott" -> "ओटीटी"
             "tap_open" -> "खोलने के लिए टैप करें"
+            "ott_home_title" -> "देखें और सुनें"
+            "ott_home_sub" -> "आसान चुनाव · बड़े बटन"
+            "voice_assistant" -> "आवाज़ सहायक"
+            "voice_assistant_hint" -> "बोलें क्या चाहिए — भजन, समाचार या फ़िल्म"
+            "cat_all" -> "सभी"
+            "cat_movies" -> "फ़िल्में"
+            "cat_music" -> "संगीत"
+            "cat_spiritual" -> "आध्यात्मिक"
+            "cat_news" -> "समाचार"
+            "cat_kids" -> "बच्चे"
+            "recent_played" -> "हाल में चला"
+            "recommended" -> "आपके लिए"
+            "browse_apps" -> "आपके ऐप"
+            "bigtap_footer" -> "बड़े बटन · साफ़ टेक्स्ट"
+            "plat_youtube" -> "YouTube"
+            "plat_music" -> "संगीत"
+            "plat_movies" -> "फ़िल्में"
+            "plat_tv" -> "टीवी शो"
+            "plat_news" -> "समाचार"
+            "plat_podcasts" -> "पॉडकास्ट"
+            "plat_spiritual" -> "भक्ति व शांति"
+            "plat_kids" -> "बच्चों का कोना"
             "coming_soon" -> "जल्द आ रहा है"
             "language" -> "भाषा"
             "take_medicine_title" -> "दवा लें"
@@ -117,6 +199,21 @@ private fun tr(lang: ElderLanguage, key: String): String {
             "qty_fmt" -> "मात्रा %d"
             "elder_back" -> "पीछे"
             "sos_main" -> "SOS"
+            "elder_app_title" -> "केयर कम्पैनियन"
+            "weather_demo" -> "२२°C · हल्की धूप"
+            "daily_health_demo" -> "आज स्थिर हैं · पानी पीते रहें"
+            "health_chip" -> "अच्छा है"
+            "med_preview_title" -> "अगली दवा"
+            "med_preview_demo" -> "लोराज़ेपाम · दोपहर के बाद"
+            "sos_reassurance" -> "शांत रहें — पुष्टि के बाद ही मदद भेजी जाती है।"
+            "settings" -> "सेटिंग्स"
+            "drawer_section_health" -> "स्वास्थ्य"
+            "drawer_section_safety" -> "सुरक्षा"
+            "drawer_section_entertainment" -> "मनोरंजन"
+            "drawer_section_settings" -> "सेटिंग्स"
+            "drawer_you" -> "लॉग इन"
+            "drawer_quick_sos" -> "त्वरित SOS"
+            "drawer_quick_sos_sub" -> "आपातकाल · अलर्ट फ्लो"
             else -> key
         }
         ElderLanguage.MARATHI -> when (key) {
@@ -130,6 +227,28 @@ private fun tr(lang: ElderLanguage, key: String): String {
             "sos_hint" -> "आपत्कालीनसाठी दाबून ठेवा"
             "ott" -> "ओटीटी"
             "tap_open" -> "उघडण्यासाठी टॅप करा"
+            "ott_home_title" -> "पहा आणि ऐका"
+            "ott_home_sub" -> "सोपी निवड · मोठी बटणे"
+            "voice_assistant" -> "आवाजातील मदत"
+            "voice_assistant_hint" -> "बोला काय हवं आहे — भजन, बातम्या किंवा चित्रपट"
+            "cat_all" -> "सर्व"
+            "cat_movies" -> "चित्रपट"
+            "cat_music" -> "संगीत"
+            "cat_spiritual" -> "आध्यात्मिक"
+            "cat_news" -> "बातम्या"
+            "cat_kids" -> "मुले"
+            "recent_played" -> "अलीकडे प्ले केले"
+            "recommended" -> "तुमच्यासाठी"
+            "browse_apps" -> "तुमचे अ‍ॅप्स"
+            "bigtap_footer" -> "मोठी बटणे · स्पष्ट मजकूर"
+            "plat_youtube" -> "YouTube"
+            "plat_music" -> "संगीत"
+            "plat_movies" -> "चित्रपट"
+            "plat_tv" -> "टीव्ही शो"
+            "plat_news" -> "बातम्या"
+            "plat_podcasts" -> "पॉडकास्ट"
+            "plat_spiritual" -> "भक्ती आणि शांती"
+            "plat_kids" -> "मुलांचा कोना"
             "coming_soon" -> "लवकरच येत आहे"
             "language" -> "भाषा"
             "take_medicine_title" -> "औषध घ्या"
@@ -149,6 +268,21 @@ private fun tr(lang: ElderLanguage, key: String): String {
             "qty_fmt" -> "प्रमाण %d"
             "elder_back" -> "मागे"
             "sos_main" -> "SOS"
+            "elder_app_title" -> "केअर कम्पॅनियन"
+            "weather_demo" -> "२२°C · हलके ढगाळ"
+            "daily_health_demo" -> "आज स्थिर आहात · पाणी घ्या"
+            "health_chip" -> "चांगले आहे"
+            "med_preview_title" -> "पुढील औषध"
+            "med_preview_demo" -> "लोराज़ेपाम · दुपारीनंतर"
+            "sos_reassurance" -> "शांत राहा — तुम्ही खात्री केल्यावरच मदत येते."
+            "settings" -> "सेटिंग्ज"
+            "drawer_section_health" -> "आरोग्य"
+            "drawer_section_safety" -> "सुरक्षा"
+            "drawer_section_entertainment" -> "मनोरंजन"
+            "drawer_section_settings" -> "सेटिंग्ज"
+            "drawer_you" -> "साइन इन"
+            "drawer_quick_sos" -> "झटपट SOS"
+            "drawer_quick_sos_sub" -> "आपत्काल · सूचना"
             else -> key
         }
         ElderLanguage.GUJARATI -> when (key) {
@@ -162,6 +296,28 @@ private fun tr(lang: ElderLanguage, key: String): String {
             "sos_hint" -> "આપત્કાલ માટે દબાવી રાખો"
             "ott" -> "ઓટીટી"
             "tap_open" -> "ખોલવા માટે ટેપ કરો"
+            "ott_home_title" -> "જુઓ અને સાંભળો"
+            "ott_home_sub" -> "સરળ પસંદ · મોટા બટનો"
+            "voice_assistant" -> "વૉઇસ સહાયક"
+            "voice_assistant_hint" -> "કહો શું જોઈએ — ભજન, સમાચાર અથવા ફિલ્મ"
+            "cat_all" -> "બધું"
+            "cat_movies" -> "ફિલ્મો"
+            "cat_music" -> "સંગીત"
+            "cat_spiritual" -> "આધ્યાત્મિક"
+            "cat_news" -> "સમાચાર"
+            "cat_kids" -> "બાળકો"
+            "recent_played" -> "હમણાં જોયું"
+            "recommended" -> "તમારા માટે"
+            "browse_apps" -> "તમારી એપ્સ"
+            "bigtap_footer" -> "મોટા બટનો · સ્પષ્ટ લખાણ"
+            "plat_youtube" -> "YouTube"
+            "plat_music" -> "સંગીત"
+            "plat_movies" -> "ફિલ્મો"
+            "plat_tv" -> "ટીવી શો"
+            "plat_news" -> "સમાચાર"
+            "plat_podcasts" -> "પોડકાસ્ટ"
+            "plat_spiritual" -> "ભક્તિ અને શાંતિ"
+            "plat_kids" -> "બાળકો માટે"
             "coming_soon" -> "જલ્દી આવશે"
             "language" -> "ભાષા"
             "take_medicine_title" -> "દવા લો"
@@ -181,6 +337,21 @@ private fun tr(lang: ElderLanguage, key: String): String {
             "qty_fmt" -> "જથ્થો %d"
             "elder_back" -> "પાછા"
             "sos_main" -> "SOS"
+            "elder_app_title" -> "કેઅર કમ્પેનિયન"
+            "weather_demo" -> "२२°C · હલકું વાદળી"
+            "daily_health_demo" -> "આજે સ્થિતિસ્થાપક · પાણી પીજો"
+            "health_chip" -> "સારું છે"
+            "med_preview_title" -> "આગલી દવા"
+            "med_preview_demo" -> "લોરાઝેપામ · બપોર પછી"
+            "sos_reassurance" -> "શાંત રહો — તમારી પુષ્ટિ પછી જ મદદ મોકલાશે."
+            "settings" -> "સેટિંગ્સ"
+            "drawer_section_health" -> "આરોગ્ય"
+            "drawer_section_safety" -> "સલામતી"
+            "drawer_section_entertainment" -> "મનોરંજન"
+            "drawer_section_settings" -> "સેટિંગ્સ"
+            "drawer_you" -> "સાઇન ઇન"
+            "drawer_quick_sos" -> "ઝડપી SOS"
+            "drawer_quick_sos_sub" -> "કટોકટી · ચેતવણી"
             else -> key
         }
     }
@@ -193,6 +364,7 @@ sealed class ElderDestination {
     object Vitals      : ElderDestination()
     object Contacts    : ElderDestination()
     object Entertainment : ElderDestination()
+    object Settings    : ElderDestination()
 }
 
 private data class ContactPerson(
@@ -201,11 +373,123 @@ private data class ContactPerson(
     val avatarBg: Color
 )
 
-private data class EntertainmentItem(
-    val name: String,
+private enum class OttCategory {
+    MOVIES,
+    MUSIC,
+    SPIRITUAL,
+    NEWS,
+    KIDS;
+
+    fun trKey(): String =
+        when (this) {
+            MOVIES -> "cat_movies"
+            MUSIC -> "cat_music"
+            SPIRITUAL -> "cat_spiritual"
+            NEWS -> "cat_news"
+            KIDS -> "cat_kids"
+        }
+}
+
+private data class OttPlatform(
+    val id: String,
+    val labelKey: String,
     val icon: ImageVector,
-    val color: Color
+    val thumbBrush: Brush,
+    val thumbIconTint: Color,
+    val category: OttCategory,
 )
+
+private fun ottCatalog(): List<OttPlatform> =
+    listOf(
+        OttPlatform(
+            id = "yt",
+            labelKey = "plat_youtube",
+            icon = Icons.Outlined.PlayCircle,
+            thumbBrush =
+                Brush.linearGradient(
+                    listOf(Color(0xFFFF0844), Color(0xFFFFB199)),
+                ),
+            thumbIconTint = Color.White,
+            category = OttCategory.MOVIES,
+        ),
+        OttPlatform(
+            id = "music",
+            labelKey = "plat_music",
+            icon = Icons.Outlined.LibraryMusic,
+            thumbBrush =
+                Brush.linearGradient(
+                    listOf(Color(0xFF1DB954), Color(0xFF169C46)),
+                ),
+            thumbIconTint = Color.White,
+            category = OttCategory.MUSIC,
+        ),
+        OttPlatform(
+            id = "movies",
+            labelKey = "plat_movies",
+            icon = Icons.Outlined.Movie,
+            thumbBrush =
+                Brush.linearGradient(
+                    listOf(Color(0xFF0F0F0F), Color(0xFFE50914)),
+                ),
+            thumbIconTint = Color.White,
+            category = OttCategory.MOVIES,
+        ),
+        OttPlatform(
+            id = "tv",
+            labelKey = "plat_tv",
+            icon = Icons.Outlined.LiveTv,
+            thumbBrush =
+                Brush.linearGradient(
+                    listOf(Color(0xFF452B7A), Color(0xFFAB47BC)),
+                ),
+            thumbIconTint = Color.White,
+            category = OttCategory.MOVIES,
+        ),
+        OttPlatform(
+            id = "news",
+            labelKey = "plat_news",
+            icon = Icons.Outlined.Newspaper,
+            thumbBrush =
+                Brush.linearGradient(
+                    listOf(Color(0xFF0D47A1), Color(0xFF42A5F5)),
+                ),
+            thumbIconTint = Color.White,
+            category = OttCategory.NEWS,
+        ),
+        OttPlatform(
+            id = "podcasts",
+            labelKey = "plat_podcasts",
+            icon = Icons.Outlined.Podcasts,
+            thumbBrush =
+                Brush.linearGradient(
+                    listOf(Color(0xFF673AB7), Color(0xFFB39DDB)),
+                ),
+            thumbIconTint = Color.White,
+            category = OttCategory.MUSIC,
+        ),
+        OttPlatform(
+            id = "spiritual",
+            labelKey = "plat_spiritual",
+            icon = Icons.Outlined.Spa,
+            thumbBrush =
+                Brush.linearGradient(
+                    listOf(Color(0xFFFF8F00), Color(0xFFFFF176)),
+                ),
+            thumbIconTint = Color(0xFF4E342E),
+            category = OttCategory.SPIRITUAL,
+        ),
+        OttPlatform(
+            id = "kids",
+            labelKey = "plat_kids",
+            icon = Icons.Outlined.ChildCare,
+            thumbBrush =
+                Brush.linearGradient(
+                    listOf(Color(0xFF0097A7), Color(0xFF4DD0E1)),
+                ),
+            thumbIconTint = Color.White,
+            category = OttCategory.KIDS,
+        ),
+    )
 
 private data class MedicineItem(
     val name: String,
@@ -235,17 +519,23 @@ fun ElderHomeScreen(
             drawerState = drawerState,
             drawerContent = {
                 ElderDrawer(
+                    elderName = elderName,
+                    drawerState = drawerState,
                     current = destination,
+                    onSosQuick = {
+                        onSosPressed()
+                        scope.launch { drawerState.close() }
+                    },
                     onSelect = { dest ->
                         destination = dest
                         scope.launch { drawerState.close() }
-                    }
+                    },
                 )
             },
             scrimColor = Color.Black.copy(alpha = 0.3f)
         ) {
             Scaffold(
-                containerColor = Color(0xFFF4F6F4),
+                containerColor = ElderPageBg,
                 topBar = {
                     ElderTopBar(
                         onMenuClick = { scope.launch { drawerState.open() } },
@@ -260,6 +550,16 @@ fun ElderHomeScreen(
                     ElderDestination.Vitals      -> VitalsScreen(padding, onSosPressed) { destination = it }
                     ElderDestination.Contacts    -> ContactsScreen(padding, onSosPressed, elderContacts) { destination = it }
                     ElderDestination.Entertainment -> EntertainmentScreen(padding, onSosPressed) { destination = it }
+                    ElderDestination.Settings ->
+                        StubScreen(
+                            padding = padding,
+                            title = tr(LocalElderLanguage.current, "settings"),
+                            icon = Icons.Outlined.Settings,
+                            color = ElderNavy,
+                            onSosPressed = onSosPressed,
+                            current = ElderDestination.Settings,
+                            onNavigate = { destination = it },
+                        )
                 }
             }
         }
@@ -267,162 +567,517 @@ fun ElderHomeScreen(
 }
 
 // ── Top bar ─────────────────────────────────────────────────────────
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ElderTopBar(
     onMenuClick: () -> Unit,
     onLanguageSelected: (ElderLanguage) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
 ) {
+    val lang = LocalElderLanguage.current
+    val ctx = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
-    TopAppBar(
-        title = {},
-        modifier = Modifier.padding(horizontal = 4.dp),
-        navigationIcon = {
-            IconButton(onClick = onMenuClick) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(6.dp, RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)),
+        shape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp),
+        color = ElderCard,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(horizontal = 6.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            IconButton(
+                onClick = onMenuClick,
+                modifier = Modifier.size(56.dp),
+            ) {
                 Icon(
                     Icons.Filled.Menu,
-                    contentDescription = "Menu",
-                    tint = Color(0xFF333333),
-                    modifier = Modifier.size(26.dp)
+                    contentDescription = tr(lang, "menu"),
+                    tint = ElderNavy,
+                    modifier = Modifier.size(30.dp),
                 )
             }
-        },
-        actions = {
+
+            Text(
+                text = tr(lang, "elder_app_title"),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 6.dp),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = ElderNavy,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
+
             Box {
-                IconButton(onClick = { expanded = true }) {
+                IconButton(
+                    onClick = { expanded = true },
+                    modifier = Modifier.size(52.dp),
+                ) {
                     Icon(
                         Icons.Outlined.Translate,
-                        contentDescription = "Language",
-                        tint = Color(0xFF4F4F4F),
-                        modifier = Modifier.size(22.dp)
+                        contentDescription = tr(lang, "language"),
+                        tint = ElderSoftBlue,
+                        modifier = Modifier.size(28.dp),
                     )
                 }
-                DropdownMenu(
+                CareGlassLanguageDropdown(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("English") },
-                        onClick = { onLanguageSelected(ElderLanguage.ENGLISH); expanded = false }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("हिन्दी") },
-                        onClick = { onLanguageSelected(ElderLanguage.HINDI); expanded = false }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("मराठी") },
-                        onClick = { onLanguageSelected(ElderLanguage.MARATHI); expanded = false }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("ગુજરાતી") },
-                        onClick = { onLanguageSelected(ElderLanguage.GUJARATI); expanded = false }
-                    )
-                }
+                    onDismissRequest = { expanded = false },
+                    selected = lang,
+                    onSelect = onLanguageSelected,
+                    menuTitle = tr(lang, "language"),
+                )
             }
-            IconButton(onClick = {}) {
+
+            IconButton(
+                onClick = {
+                    Toast.makeText(
+                        ctx,
+                        "No new alerts right now.",
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                },
+                modifier = Modifier.size(52.dp),
+            ) {
                 Icon(
                     Icons.Outlined.Notifications,
                     contentDescription = "Notifications",
-                    tint = Color(0xFF4F4F4F),
-                    modifier = Modifier.size(24.dp)
+                    tint = ElderNavy.copy(alpha = 0.75f),
+                    modifier = Modifier.size(28.dp),
                 )
             }
-            IconButton(onClick = onLogout) {
+
+            IconButton(
+                onClick = onLogout,
+                modifier = Modifier.size(52.dp),
+            ) {
                 Icon(
                     Icons.Outlined.Logout,
                     contentDescription = "Logout",
-                    tint = Color(0xFFB42318),
-                    modifier = Modifier.size(23.dp)
+                    tint = ElderEmergency,
+                    modifier = Modifier.size(28.dp),
                 )
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF7F9F8))
-    )
+        }
+    }
 }
 
 // ── Side drawer ──────────────────────────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ElderDrawer(
+    elderName: String,
+    drawerState: DrawerState,
     current: ElderDestination,
-    onSelect: (ElderDestination) -> Unit
+    onSosQuick: () -> Unit,
+    onSelect: (ElderDestination) -> Unit,
 ) {
     val lang = LocalElderLanguage.current
+    val drawerMotionOpen by remember {
+        derivedStateOf {
+            drawerState.currentValue == DrawerValue.Open ||
+                drawerState.targetValue == DrawerValue.Open
+        }
+    }
+
     ModalDrawerSheet(
-        modifier = Modifier.width(260.dp),
-        drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp),
-        drawerContainerColor = Color.White
+        modifier = Modifier.width(304.dp),
+        drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp),
+        drawerContainerColor = Color(0xFFF4F6FB),
+        drawerTonalElevation = 4.dp,
     ) {
-        Spacer(Modifier.height(48.dp))
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 8.dp),
+        ) {
+            DrawerProfileHeader(elderName = elderName, lang = lang)
 
-        Text(
-            text = tr(lang, "menu"),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFFAAAAAA),
-            letterSpacing = 1.sp,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-        )
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 12.dp),
+            ) {
+                AnimatedVisibility(
+                    visible = drawerMotionOpen,
+                    enter =
+                        fadeIn(animationSpec = tween(280, delayMillis = 40)) +
+                            slideInHorizontally(
+                                animationSpec = tween(340, delayMillis = 40),
+                                initialOffsetX = { -it / 5 },
+                            ),
+                    exit = fadeOut(tween(120)),
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        DrawerSectionHeader(title = tr(lang, "drawer_section_health"))
+                        DrawerNavRow(
+                            icon = Icons.Outlined.Home,
+                            label = tr(lang, "home"),
+                            selected = current == ElderDestination.Home,
+                            onClick = { onSelect(ElderDestination.Home) },
+                        )
+                        DrawerNavRow(
+                            icon = Icons.Outlined.MedicalServices,
+                            label = tr(lang, "medicines"),
+                            selected = current == ElderDestination.Medicines,
+                            onClick = { onSelect(ElderDestination.Medicines) },
+                        )
+                        DrawerNavRow(
+                            icon = Icons.Outlined.MonitorHeart,
+                            label = tr(lang, "vitals"),
+                            selected = current == ElderDestination.Vitals,
+                            onClick = { onSelect(ElderDestination.Vitals) },
+                        )
 
-        DrawerItem(
-            icon  = Icons.Outlined.MedicalServices,
-            label = tr(lang, "medicines"),
-            selected = current == ElderDestination.Medicines,
-            onClick = { onSelect(ElderDestination.Medicines) }
-        )
-        DrawerItem(
-            icon  = Icons.Outlined.MonitorHeart,
-            label = tr(lang, "vitals"),
-            selected = current == ElderDestination.Vitals,
-            onClick = { onSelect(ElderDestination.Vitals) }
-        )
+                        Spacer(Modifier.height(10.dp))
 
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-            color = Color(0xFFEEEEEE)
-        )
+                        DrawerSectionHeader(title = tr(lang, "drawer_section_safety"))
+                        DrawerNavRow(
+                            icon = Icons.Outlined.Shield,
+                            label = tr(lang, "contacts"),
+                            selected = current == ElderDestination.Contacts,
+                            onClick = { onSelect(ElderDestination.Contacts) },
+                        )
 
-        DrawerItem(
-            icon  = Icons.Outlined.Home,
-            label = tr(lang, "home"),
-            selected = current == ElderDestination.Home,
-            onClick = { onSelect(ElderDestination.Home) }
-        )
+                        Spacer(Modifier.height(10.dp))
+
+                        DrawerSectionHeader(title = tr(lang, "drawer_section_entertainment"))
+                        DrawerNavRow(
+                            icon = Icons.Outlined.Movie,
+                            label = tr(lang, "entertainment"),
+                            selected = current == ElderDestination.Entertainment,
+                            onClick = { onSelect(ElderDestination.Entertainment) },
+                        )
+
+                        Spacer(Modifier.height(10.dp))
+
+                        DrawerSectionHeader(title = tr(lang, "drawer_section_settings"))
+                        DrawerNavRow(
+                            icon = Icons.Outlined.Settings,
+                            label = tr(lang, "settings"),
+                            selected = current == ElderDestination.Settings,
+                            onClick = { onSelect(ElderDestination.Settings) },
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+                    }
+                }
+            }
+
+            DrawerQuickSosFooter(
+                lang = lang,
+                onClick = onSosQuick,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+            )
+        }
     }
 }
 
 @Composable
-private fun DrawerItem(
+private fun DrawerProfileHeader(
+    elderName: String,
+    lang: ElderLanguage,
+) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                ElderNavy,
+                                Color(0xFF1E3A5F),
+                                ElderSoftBlue.copy(alpha = 0.92f),
+                            ),
+                    ),
+                )
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 22.dp),
+    ) {
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.15f),
+                    shadowElevation = 9.dp,
+                    modifier = Modifier.size(72.dp),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(3.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(Color.White, Color(0xFFE3F2FD)),
+                                    ),
+                                ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Outlined.Elderly,
+                            contentDescription = null,
+                            tint = ElderNavy,
+                            modifier = Modifier.size(38.dp),
+                        )
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = tr(lang, "drawer_you"),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White.copy(alpha = 0.78f),
+                    )
+                    Text(
+                        text = elderName,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White.copy(alpha = 0.14f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)),
+                shadowElevation = 5.dp,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(ElderMint),
+                    )
+                    Icon(
+                        Icons.Outlined.FavoriteBorder,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.size(22.dp),
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = tr(lang, "health_chip"),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        )
+                        Text(
+                            text = tr(lang, "status_at_home"),
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.82f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DrawerSectionHeader(title: String) {
+    Text(
+        text = title.uppercase(Locale.getDefault()),
+        modifier =
+            Modifier
+                .padding(start = 8.dp, top = 12.dp, bottom = 6.dp),
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.2.sp,
+        color = ElderNavy.copy(alpha = 0.45f),
+    )
+}
+
+@Composable
+private fun DrawerNavRow(
     icon: ImageVector,
     label: String,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
-    val bgColor   = if (selected) CareGreen.copy(alpha = 0.1f) else Color.Transparent
-    val iconColor = if (selected) CareGreen else Color(0xFF555555)
-    val txtColor  = if (selected) CareGreen else Color(0xFF333333)
-
+    val interactionSource = remember { MutableInteractionSource() }
+    val pillShape = RoundedCornerShape(16.dp)
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 3.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(bgColor)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+                .shadow(
+                    elevation = if (selected) 8.dp else 2.dp,
+                    shape = pillShape,
+                    ambientColor = Color.Black.copy(alpha = if (selected) 0.14f else 0.06f),
+                    spotColor = ElderSoftBlue.copy(alpha = if (selected) 0.24f else 0.1f),
+                )
+                .clip(pillShape)
+                .background(
+                    if (selected) {
+                        Brush.horizontalGradient(
+                            listOf(
+                                ElderSoftBlue.copy(alpha = 0.22f),
+                                ElderMint.copy(alpha = 0.18f),
+                                Color.White.copy(alpha = 0.92f),
+                            ),
+                        )
+                    } else {
+                        Brush.horizontalGradient(listOf(Color.White, Color(0xFFFDFEFE)))
+                    },
+                )
+                .border(
+                    width = 1.dp,
+                    color =
+                        if (selected) ElderSoftBlue.copy(alpha = 0.38f)
+                        else Color(0x14000000),
+                    shape = pillShape,
+                )
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                )
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(if (selected) CareGreen.copy(alpha = 0.15f) else Color(0xFFF2F2F2)),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(
+                        if (selected) ElderNavy.copy(alpha = 0.12f)
+                        else Color(0xFFF1F5F9),
+                    ),
+            contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = label, tint = iconColor, modifier = Modifier.size(20.dp))
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = if (selected) ElderNavy else ElderNavy.copy(alpha = 0.72f),
+                modifier = Modifier.size(24.dp),
+            )
         }
-        Spacer(Modifier.width(14.dp))
-        Text(label, fontSize = 15.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, color = txtColor)
+        Text(
+            text = label,
+            fontSize = 17.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+            color = if (selected) ElderNavy else ElderNavy.copy(alpha = 0.88f),
+            modifier = Modifier.weight(1f),
+        )
+        if (selected) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(9.dp)
+                        .clip(CircleShape)
+                        .background(ElderMint),
+            )
+        }
+    }
+}
+
+@Composable
+private fun DrawerQuickSosFooter(
+    lang: ElderLanguage,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val shape = RoundedCornerShape(18.dp)
+    Row(
+        modifier =
+            modifier
+                .shadow(
+                    elevation = 12.dp,
+                    shape = shape,
+                    ambientColor = ElderEmergency.copy(alpha = 0.35f),
+                    spotColor = ElderEmergency.copy(alpha = 0.45f),
+                )
+                .clip(shape)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(Color(0xFFFF5252), ElderEmergency, Color(0xFFD50000)),
+                    ),
+                )
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                )
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.22f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Outlined.Emergency,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp),
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = tr(lang, "drawer_quick_sos"),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
+            Text(
+                text = tr(lang, "drawer_quick_sos_sub"),
+                fontSize = 13.sp,
+                color = Color.White.copy(alpha = 0.88f),
+            )
+        }
+        Icon(
+            Icons.Outlined.ChevronRight,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.9f),
+            modifier = Modifier.size(26.dp),
+        )
     }
 }
 
@@ -432,127 +1087,367 @@ private fun ElderHomePage(
     padding: PaddingValues,
     elderName: String,
     onSosPressed: () -> Unit,
-    navigate: (ElderDestination) -> Unit
+    navigate: (ElderDestination) -> Unit,
 ) {
-    Column(
+    val lang = LocalElderLanguage.current
+    val dateStr = remember {
+        SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date())
+    }
+
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(padding)
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(horizontal = 18.dp),
+        contentPadding = PaddingValues(top = 12.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        AvatarCard(
+        item {
+            WeatherDateBanner(
+                dateLabel = dateStr,
+                weather = tr(lang, "weather_demo"),
+            )
+        }
+        item {
+            ProfileSummaryCard(
+                name = elderName,
+                healthChip = tr(lang, "health_chip"),
+                locationLine = tr(lang, "status_at_home"),
+            )
+        }
+        item {
+            DailyHealthSummaryCard(text = tr(lang, "daily_health_demo"))
+        }
+        item {
+            MedicationReminderPreviewCard(
+                title = tr(lang, "med_preview_title"),
+                detail = tr(lang, "med_preview_demo"),
+                onOpen = { navigate(ElderDestination.Medicines) },
+            )
+        }
+        item {
+            SosButton(onSosPressed)
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                ActionCard(
+                    icon = Icons.Outlined.Groups,
+                    label = tr(lang, "contacts"),
+                    tint = Color(0xFF0D47A1),
+                    bg = Color(0xFFE3F2FD),
+                    modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(0.82f),
+                    onClick = { navigate(ElderDestination.Contacts) },
+                )
+                ActionCard(
+                    icon = Icons.Outlined.Movie,
+                    label = tr(lang, "entertainment"),
+                    tint = Color(0xFF4A148C),
+                    bg = Color(0xFFF3E5F5),
+                    modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(0.82f),
+                    onClick = { navigate(ElderDestination.Entertainment) },
+                )
+            }
+        }
+    }
+}
+
+// ── Home widgets ─────────────────────────────────────────────────────
+@Composable
+private fun WeatherDateBanner(
+    dateLabel: String,
+    weather: String,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(10.dp, RoundedCornerShape(24.dp), spotColor = ElderSoftBlue.copy(alpha = 0.14f)),
+        shape = RoundedCornerShape(24.dp),
+        color = ElderCard,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.85f)),
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(330.dp),
-            name = elderName,
-            status = tr(LocalElderLanguage.current, "status_at_home")
-        )
-
-        // SOS below profile as requested.
-        Spacer(modifier = Modifier.height(20.dp))
-        SosButton(onSosPressed)
-        Spacer(modifier = Modifier.height(10.dp))
-        Spacer(modifier = Modifier.weight(1f))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            ActionCard(
-                icon  = Icons.Outlined.Contacts,
-                label = tr(LocalElderLanguage.current, "contacts"),
-                tint  = Color(0xFF1565C0),
-                bg    = Color(0xFFE3F2FD),
+            Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .height(170.dp),
-                onClick = { navigate(ElderDestination.Contacts) }
-            )
-            ActionCard(
-                icon  = Icons.Outlined.Movie,
-                label = tr(LocalElderLanguage.current, "entertainment"),
-                tint  = Color(0xFF6A1B9A),
-                bg    = Color(0xFFF3E5F5),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(170.dp),
-                onClick = { navigate(ElderDestination.Entertainment) }
+                    .size(54.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(ElderSoftBlue.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.CalendarMonth,
+                    contentDescription = null,
+                    tint = ElderSoftBlue,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = dateLabel,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ElderNavy,
+                    maxLines = 2,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = weather,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = ElderNavy.copy(alpha = 0.65f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                Icons.Outlined.WbSunny,
+                contentDescription = null,
+                tint = Color(0xFFFFA726),
+                modifier = Modifier.size(38.dp),
             )
         }
     }
 }
 
-// ── Avatar card ──────────────────────────────────────────────────────
 @Composable
-private fun AvatarCard(
-    modifier: Modifier = Modifier,
-    name: String,
-    status: String
-) {
-    Box(
-        modifier = modifier
-            .shadow(6.dp, RoundedCornerShape(24.dp), ambientColor = Color.Black.copy(0.05f))
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color.White)
-            .padding(vertical = 14.dp, horizontal = 10.dp),
-        contentAlignment = Alignment.Center
+private fun DailyHealthSummaryCard(text: String) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(22.dp), spotColor = ElderMint.copy(alpha = 0.14f)),
+        shape = RoundedCornerShape(22.dp),
+        color = ElderCard,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, ElderMint.copy(alpha = 0.22f)),
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // Avatar oval
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
             Box(
                 modifier = Modifier
-                    .size(width = 138.dp, height = 162.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(Color(0xFF64B5F6), Color(0xFF1976D2)),
-                            center = Offset(0.5f, 0.3f),
-                            radius = 400f
-                        )
-                    ),
-                contentAlignment = Alignment.BottomCenter
+                    .size(50.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(ElderMint.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Elderly,
-                    contentDescription = "Avatar",
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(120.dp)
-                        .offset(y = 10.dp)
+                    Icons.Outlined.MonitorHeart,
+                    contentDescription = null,
+                    tint = ElderMint,
+                    modifier = Modifier.size(28.dp),
                 )
             }
-
-            Spacer(Modifier.height(10.dp))
-
             Text(
-                text = name,
-                fontSize = 34.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF1A1A1A)
+                text = text,
+                modifier = Modifier.weight(1f),
+                fontSize = 17.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = ElderNavy.copy(alpha = 0.88f),
+                lineHeight = 22.sp,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis,
             )
+        }
+    }
+}
 
-            Spacer(Modifier.height(8.dp))
-
-            Row(
+@Composable
+private fun MedicationReminderPreviewCard(
+    title: String,
+    detail: String,
+    onOpen: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(10.dp, RoundedCornerShape(22.dp)),
+        shape = RoundedCornerShape(22.dp),
+        color = ElderCard,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .clickable(onClick = onOpen)
+                .padding(horizontal = 18.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(30.dp))
-                    .background(Color(0xFFF1F8F2))
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .size(54.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFFFF8E1)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.Medication,
+                    contentDescription = null,
+                    tint = Color(0xFF795548),
+                    modifier = Modifier.size(30.dp),
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ElderNavy.copy(alpha = 0.55f),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = detail,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ElderNavy,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                Icons.Outlined.NavigateNext,
+                contentDescription = null,
+                tint = ElderSoftBlue,
+                modifier = Modifier.size(32.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileSummaryCard(
+    name: String,
+    healthChip: String,
+    locationLine: String,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(14.dp, RoundedCornerShape(28.dp), spotColor = ElderSoftBlue.copy(alpha = 0.16f)),
+        shape = RoundedCornerShape(28.dp),
+        color = ElderCard,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            ElderSoftBlue.copy(alpha = 0.16f),
+                            ElderMint.copy(alpha = 0.1f),
+                            Color.White,
+                        ),
+                    ),
+                )
+                .padding(horizontal = 18.dp, vertical = 20.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 Box(
                     modifier = Modifier
-                        .size(11.dp)
+                        .size(88.dp)
+                        .shadow(10.dp, CircleShape)
                         .clip(CircleShape)
-                        .background(CareGreen)
-                )
-                Spacer(Modifier.width(7.dp))
-                Text(
-                    text = status,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF3F5C45)
-                )
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(ElderSoftBlue, ElderNavy),
+                            ),
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Elderly,
+                        contentDescription = name,
+                        tint = Color.White,
+                        modifier = Modifier.size(48.dp),
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = name,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ElderNavy,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(999.dp),
+                            color = ElderMint.copy(alpha = 0.22f),
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp,
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(ElderMint),
+                                )
+                                Text(
+                                    text = healthChip,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ElderNavy,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false),
+                                )
+                            }
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(999.dp),
+                            color = ElderSoftBlue.copy(alpha = 0.14f),
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp,
+                        ) {
+                            Text(
+                                text = locationLine,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ElderNavy.copy(alpha = 0.78f),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -562,61 +1457,124 @@ private fun AvatarCard(
 @Composable
 private fun SosButton(onClick: () -> Unit) {
     val lang = LocalElderLanguage.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(140.dp)
-            .scale(if (pressed) 0.98f else 1f)
-            .shadow(
-                elevation = if (pressed) 6.dp else 12.dp,
-                shape = RoundedCornerShape(22.dp),
-                ambientColor = Color(0xFFD32F2F).copy(alpha = 0.30f),
-                spotColor = Color(0xFFD32F2F).copy(alpha = 0.35f)
-            )
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                Brush.horizontalGradient(
-                    listOf(Color(0xFFF24141), Color(0xFFD62323))
-                )
-            )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) {
-                onClick()
-            },
-        contentAlignment = Alignment.Center
+    val pulse = rememberInfiniteTransition(label = "sosGlow")
+    val pulseScale by pulse.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.045f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 950),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "sosPulseScale",
+    )
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                Icons.Outlined.Warning,
-                contentDescription = "SOS",
-                tint = Color.White,
-                modifier = Modifier.size(34.dp)
-            )
-            Spacer(Modifier.width(16.dp))
-            Text(
-                text = tr(lang, "sos_main"),
-                fontSize = 46.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
-                letterSpacing = 5.sp
-            )
-        }
-        Text(
-            text = tr(lang, "sos_hint"),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color.White.copy(alpha = 0.92f),
+        Box(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 11.dp)
-        )
+                .fillMaxWidth()
+                .height(188.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.94f)
+                    .fillMaxHeight()
+                    .graphicsLayer {
+                        scaleX = pulseScale
+                        scaleY = pulseScale
+                        alpha = 0.35f
+                    }
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(ElderEmergency.copy(alpha = 0.55f)),
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(172.dp)
+                    .shadow(
+                        elevation = 18.dp,
+                        shape = RoundedCornerShape(28.dp),
+                        ambientColor = ElderEmergency.copy(alpha = 0.35f),
+                        spotColor = ElderEmergency.copy(alpha = 0.55f),
+                    )
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color(0xFFFF5252), Color(0xFFD50000), Color(0xFFB71C1C)),
+                        ),
+                    )
+                    .pointerInput(Unit) {
+                        detectTapGestures(onLongPress = { onClick() })
+                    }
+                    .semantics {
+                        contentDescription = "${tr(lang, "sos_main")}. ${tr(lang, "sos_hint")}"
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 14.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            Icons.Outlined.HealthAndSafety,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(40.dp),
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = tr(lang, "sos_main"),
+                            modifier = Modifier.weight(1f),
+                            fontSize = 40.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White,
+                            letterSpacing = 4.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = tr(lang, "sos_hint"),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.96f),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 20.sp,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = tr(lang, "sos_reassurance"),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White.copy(alpha = 0.9f),
+                        textAlign = TextAlign.Center,
+                        lineHeight = 17.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp),
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -628,31 +1586,64 @@ private fun ActionCard(
     tint: Color,
     bg: Color,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Box(
         modifier = modifier
-            .shadow(5.dp, RoundedCornerShape(20.dp), ambientColor = Color.Black.copy(0.05f))
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color.White)
+            .shadow(
+                elevation = 14.dp,
+                shape = RoundedCornerShape(26.dp),
+                ambientColor = ElderNavy.copy(alpha = 0.07f),
+                spotColor = ElderSoftBlue.copy(alpha = 0.14f),
+            )
+            .clip(RoundedCornerShape(26.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(26.dp))
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(Color.White, ElderPageBg.copy(alpha = 0.45f)),
+                ),
+            )
             .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 18.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(bg),
-                contentAlignment = Alignment.Center
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center,
             ) {
-                Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(44.dp))
+                Box(
+                    modifier = Modifier
+                        .size(88.dp)
+                        .shadow(8.dp, RoundedCornerShape(22.dp), spotColor = tint.copy(alpha = 0.14f))
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(bg.copy(alpha = 0.94f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        icon,
+                        contentDescription = label,
+                        tint = tint,
+                        modifier = Modifier.size(48.dp),
+                    )
+                }
             }
-            Spacer(Modifier.height(12.dp))
-            Text(label, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF2F2F2F))
+            Text(
+                text = label,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = ElderNavy,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -876,13 +1867,17 @@ fun MedicinesScreen(
                             }
                             Text(
                                 text = med.name,
-                                fontSize = 34.sp,
+                                fontSize = 30.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1F1F1F)
+                                color = Color(0xFF1F1F1F),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = 34.sp,
                             )
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 AssistChip(
-                                    onClick = {},
+                                    onClick = { },
+                                    enabled = false,
                                     label = {
                                         Text(
                                             String.format(Locale.getDefault(), tr(lang, "qty_fmt"), med.quantity),
@@ -891,13 +1886,29 @@ fun MedicinesScreen(
                                     }
                                 )
                                 AssistChip(
-                                    onClick = {},
-                                    label = { Text(med.timeInstruction, fontSize = 18.sp) }
+                                    onClick = { },
+                                    enabled = false,
+                                    label = {
+                                        Text(
+                                            med.timeInstruction,
+                                            fontSize = 18.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
                                 )
                             }
                             AssistChip(
-                                onClick = {},
-                                label = { Text(med.withInstruction, fontSize = 18.sp) }
+                                onClick = { },
+                                enabled = false,
+                                label = {
+                                    Text(
+                                        med.withInstruction,
+                                        fontSize = 18.sp,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             )
 
                             Spacer(modifier = Modifier.height(6.dp))
@@ -1249,94 +2260,552 @@ private fun ContactListScreen(
 @Composable
 private fun EntertainmentListScreen(
     padding: PaddingValues,
-    onNavigate: (ElderDestination) -> Unit
+    onNavigate: (ElderDestination) -> Unit,
 ) {
     val lang = LocalElderLanguage.current
-    val items = remember {
-        listOf(
-            EntertainmentItem("YouTube", Icons.Outlined.PlayCircle, Color(0xFFFFEBEE)),
-            EntertainmentItem("Music", Icons.Outlined.LibraryMusic, Color(0xFFE3F2FD)),
-            EntertainmentItem("Movies", Icons.Outlined.Movie, Color(0xFFF3E5F5)),
-            EntertainmentItem("TV Shows", Icons.Outlined.LiveTv, Color(0xFFE8F5E9)),
-            EntertainmentItem("News", Icons.Outlined.Newspaper, Color(0xFFFFF8E1)),
-            EntertainmentItem("Podcasts", Icons.Outlined.Podcasts, Color(0xFFE0F7FA))
-        )
-    }
-    val rows = remember(items) { items.chunked(2) }
+    val catalog = remember { ottCatalog() }
+    val platformById = remember(catalog) { catalog.associateBy { it.id } }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = { onNavigate(ElderDestination.Home) },
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = tr(lang, "elder_back"),
-                    tint = Color(0xFF404040)
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = tr(lang, "ott"),
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1C1C1C)
-            )
+    var selectedCategoryName by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedCategory = selectedCategoryName?.let { OttCategory.valueOf(it) }
+
+    var recentCsv by rememberSaveable { mutableStateOf("") }
+    val recentIds = remember(recentCsv) { recentCsv.split("|").filter { it.isNotBlank() } }
+
+    fun pushRecent(id: String) {
+        val cur = recentCsv.split("|").filter { it.isNotBlank() }.toMutableList()
+        cur.remove(id)
+        cur.add(0, id)
+        recentCsv = cur.take(6).joinToString("|")
+    }
+
+    fun openPlatform(platform: OttPlatform) {
+        pushRecent(platform.id)
+    }
+
+    val filtered =
+        remember(catalog, selectedCategory) {
+            if (selectedCategory == null) catalog
+            else catalog.filter { it.category == selectedCategory }
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .shadow(6.dp, RoundedCornerShape(22.dp), ambientColor = Color.Black.copy(0.06f))
-                .clip(RoundedCornerShape(22.dp))
-                .background(Color.White)
-                .padding(horizontal = 10.dp, vertical = 12.dp)
+    val filteredRows = remember(filtered) { filtered.chunked(2) }
+
+    val recentPlatforms =
+        remember(recentIds, platformById) {
+            recentIds.mapNotNull { platformById[it] }
+        }
+
+    val recommended =
+        remember(platformById) {
+            listOf("yt", "music", "news").mapNotNull { platformById[it] }
+        }
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(top = 10.dp, bottom = 10.dp),
+    ) {
+        LazyColumn(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            contentPadding = PaddingValues(bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(bottom = 8.dp)
-            ) {
-                items(rows) { row ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+            item {
+                EntertainmentTvHeader(
+                    lang = lang,
+                    onBack = { onNavigate(ElderDestination.Home) },
+                )
+            }
+
+            item {
+                VoiceAssistantShortcut(
+                    lang = lang,
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 16.dp),
+                    onClick = { /* Voice pipeline can plug in here */ },
+                )
+            }
+
+            item {
+                OttCategoryChipsRow(
+                    lang = lang,
+                    selectedCategory = selectedCategory,
+                    onSelectAll = { selectedCategoryName = null },
+                    onSelectCategory = { cat -> selectedCategoryName = cat.name },
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 16.dp),
+                )
+            }
+
+            if (recentPlatforms.isNotEmpty()) {
+                item {
+                    OttSectionTitle(
+                        text = tr(lang, "recent_played"),
+                        modifier =
+                            Modifier
+                                .padding(horizontal = 16.dp),
+                    )
+                }
+                item {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        EntertainmentCard(
-                            item = row[0],
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (row.size > 1) {
-                            EntertainmentCard(
-                                item = row[1],
-                                modifier = Modifier.weight(1f)
+                        items(recentPlatforms, key = { "recent_${it.id}" }) { platform ->
+                            OttLaunchCard(
+                                platform = platform,
+                                lang = lang,
+                                thumbHeight = 102.dp,
+                                titleFontSize = 17.sp,
+                                onOpen = { openPlatform(platform) },
+                                modifier = Modifier.width(158.dp),
                             )
-                        } else {
-                            Spacer(modifier = Modifier.weight(1f))
                         }
                     }
                 }
             }
+
+            item {
+                OttSectionTitle(
+                    text = tr(lang, "recommended"),
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 16.dp),
+                )
+            }
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(recommended, key = { "rec_${it.id}" }) { platform ->
+                        OttLaunchCard(
+                            platform = platform,
+                            lang = lang,
+                            thumbHeight = 102.dp,
+                            titleFontSize = 17.sp,
+                            onOpen = { openPlatform(platform) },
+                            modifier = Modifier.width(164.dp),
+                        )
+                    }
+                }
+            }
+
+            item {
+                OttSectionTitle(
+                    text = tr(lang, "browse_apps"),
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 16.dp),
+                )
+            }
+
+            items(filteredRows, key = { row -> row.joinToString("-") { it.id } }) { row ->
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OttLaunchCard(
+                        platform = row[0],
+                        lang = lang,
+                        thumbHeight = 118.dp,
+                        titleFontSize = 18.sp,
+                        onOpen = { openPlatform(row[0]) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (row.size > 1) {
+                        OttLaunchCard(
+                            platform = row[1],
+                            lang = lang,
+                            thumbHeight = 118.dp,
+                            titleFontSize = 18.sp,
+                            onOpen = { openPlatform(row[1]) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+
+            item {
+                Text(
+                    text = tr(lang, "bigtap_footer"),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 6.dp),
+                    fontSize = 13.sp,
+                    color = ElderNavy.copy(alpha = 0.55f),
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
 
         SharedBottomNav(
+            modifier = Modifier.padding(horizontal = 16.dp),
             current = ElderDestination.Entertainment,
-            onNavigate = onNavigate
+            onNavigate = onNavigate,
         )
+    }
+}
+
+@Composable
+private fun EntertainmentTvHeader(
+    lang: ElderLanguage,
+    onBack: () -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                Color(0xFF2D1B69),
+                                Color(0xFF4A148C),
+                                ElderSoftBlue,
+                                ElderPageBg,
+                            ),
+                    ),
+                )
+                .padding(start = 10.dp, end = 16.dp, top = 4.dp, bottom = 26.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(
+                onClick = onBack,
+                modifier =
+                    Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.22f)),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = tr(lang, "elder_back"),
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = tr(lang, "entertainment").uppercase(Locale.getDefault()),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.82f),
+                    letterSpacing = 1.1.sp,
+                )
+                Text(
+                    text = tr(lang, "ott_home_title"),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    letterSpacing = (-0.5).sp,
+                )
+                Text(
+                    text = tr(lang, "ott_home_sub"),
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.88f),
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            Icon(
+                imageVector = Icons.Outlined.LiveTv,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.85f),
+                modifier = Modifier.size(34.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun VoiceAssistantShortcut(
+    lang: ElderLanguage,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(targetValue = if (pressed) 0.98f else 1f, label = "voiceTap")
+
+    Surface(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .scale(scale)
+                .semantics {
+                    role = Role.Button
+                    contentDescription =
+                        "${tr(lang, "voice_assistant")}. ${tr(lang, "voice_assistant_hint")}"
+                }
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                ),
+        shape = RoundedCornerShape(22.dp),
+        color = ElderCard,
+        shadowElevation = 6.dp,
+        border = BorderStroke(1.dp, ElderSoftBlue.copy(alpha = 0.35f)),
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.linearGradient(
+                                listOf(ElderSoftBlue, ElderMint.copy(alpha = 0.95f)),
+                            ),
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.Mic,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = tr(lang, "voice_assistant"),
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ElderNavy,
+                )
+                Text(
+                    text = tr(lang, "voice_assistant_hint"),
+                    fontSize = 14.sp,
+                    color = ElderNavy.copy(alpha = 0.62f),
+                    modifier = Modifier.padding(top = 4.dp),
+                    lineHeight = 18.sp,
+                )
+            }
+            Icon(
+                Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = ElderNavy.copy(alpha = 0.45f),
+                modifier = Modifier.size(28.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun OttCategoryChipsRow(
+    lang: ElderLanguage,
+    selectedCategory: OttCategory?,
+    onSelectAll: () -> Unit,
+    onSelectCategory: (OttCategory) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        item {
+            OttCategoryChip(
+                label = tr(lang, "cat_all"),
+                selected = selectedCategory == null,
+                onClick = onSelectAll,
+            )
+        }
+        items(enumValues<OttCategory>().toList(), key = { it.name }) { cat ->
+            OttCategoryChip(
+                label = tr(lang, cat.trKey()),
+                selected = selectedCategory == cat,
+                onClick = { onSelectCategory(cat) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun OttCategoryChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    Surface(
+        modifier =
+            Modifier
+                .semantics {
+                    role = Role.Button
+                    contentDescription = label
+                }
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                ),
+        shape = RoundedCornerShape(24.dp),
+        color =
+            if (selected) ElderSoftBlue.copy(alpha = 0.22f) else ElderCard,
+        border =
+            BorderStroke(
+                width = 1.dp,
+                color =
+                    if (selected) ElderSoftBlue.copy(alpha = 0.65f)
+                    else Color(0x14000000),
+            ),
+        shadowElevation = if (selected) 3.dp else 1.dp,
+    ) {
+        Text(
+            text = label,
+            modifier =
+                Modifier.padding(
+                    horizontal = 18.dp,
+                    vertical = 14.dp,
+                ),
+            fontSize = 15.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+            color = if (selected) ElderNavy else ElderNavy.copy(alpha = 0.85f),
+        )
+    }
+}
+
+@Composable
+private fun OttSectionTitle(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        modifier = modifier.padding(top = 6.dp),
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+        color = ElderNavy,
+    )
+}
+
+@Composable
+private fun OttLaunchCard(
+    platform: OttPlatform,
+    lang: ElderLanguage,
+    thumbHeight: androidx.compose.ui.unit.Dp,
+    titleFontSize: androidx.compose.ui.unit.TextUnit,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(targetValue = if (pressed) 0.97f else 1f, label = "ottCardPress")
+
+    val title = tr(lang, platform.labelKey)
+    val categoryLine = tr(lang, platform.category.trKey())
+
+    Card(
+        modifier =
+            modifier
+                .scale(scale)
+                .semantics {
+                    role = Role.Button
+                    contentDescription =
+                        "$title. ${tr(lang, "tap_open")}. $categoryLine."
+                }
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onOpen,
+                ),
+        shape = RoundedCornerShape(22.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = ElderCard),
+        border = BorderStroke(1.dp, Color(0x14000000)),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(thumbHeight)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(platform.thumbBrush),
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors =
+                                        listOf(
+                                            Color.Black.copy(alpha = 0f),
+                                            Color.Black.copy(alpha = 0.28f),
+                                        ),
+                                    ),
+                            ),
+                )
+                Icon(
+                    imageVector = platform.icon,
+                    contentDescription = null,
+                    tint = platform.thumbIconTint,
+                    modifier =
+                        Modifier
+                            .align(Alignment.Center)
+                            .size(40.dp),
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = title,
+                fontSize = titleFontSize,
+                fontWeight = FontWeight.Bold,
+                color = ElderNavy,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 22.sp,
+            )
+            Text(
+                text = categoryLine,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = ElderNavy.copy(alpha = 0.55f),
+                modifier = Modifier.padding(top = 4.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = tr(lang, "tap_open"),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = ElderSoftBlue,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
     }
 }
 
@@ -1410,56 +2879,6 @@ private fun ContactCard(
     }
 }
 
-@Composable
-private fun EntertainmentCard(
-    item: EntertainmentItem,
-    modifier: Modifier = Modifier
-) {
-    val lang = LocalElderLanguage.current
-    Box(
-        modifier = modifier
-            .height(182.dp)
-            .shadow(4.dp, RoundedCornerShape(18.dp), ambientColor = Color.Black.copy(0.05f))
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color(0xFFFBFBFB))
-            .padding(10.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(102.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(item.color),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = item.icon,
-                    contentDescription = item.name,
-                    tint = Color(0xFF5A2D82),
-                    modifier = Modifier.size(56.dp)
-                )
-            }
-            Text(
-                text = item.name,
-                fontSize = 23.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1E1E1E),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = tr(lang, "tap_open"),
-                fontSize = 14.sp,
-                color = Color(0xFF888888)
-            )
-        }
-    }
-}
 
 @Composable
 private fun StubScreen(
@@ -1507,21 +2926,26 @@ private fun StubScreen(
 
 @Composable
 private fun SharedBottomNav(
+    modifier: Modifier = Modifier,
     current: ElderDestination,
-    onNavigate: (ElderDestination) -> Unit
+    onNavigate: (ElderDestination) -> Unit,
 ) {
-    val left = when (current) {
-        ElderDestination.Contacts -> ElderDestination.Home
-        else -> ElderDestination.Contacts
-    }
-    val right = when (current) {
-        ElderDestination.Entertainment -> ElderDestination.Home
-        else -> ElderDestination.Entertainment
-    }
+    val left =
+        when (current) {
+            ElderDestination.Contacts -> ElderDestination.Home
+            ElderDestination.Settings -> ElderDestination.Home
+            else -> ElderDestination.Contacts
+        }
+    val right =
+        when (current) {
+            ElderDestination.Entertainment -> ElderDestination.Home
+            ElderDestination.Settings -> ElderDestination.Contacts
+            else -> ElderDestination.Entertainment
+        }
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         FooterNavCard(
             destination = left,
@@ -1555,13 +2979,14 @@ private fun FooterNavCard(
         ElderDestination.Entertainment -> NavMeta(tr(lang, "entertainment"), Icons.Outlined.Movie, Color(0xFF6A1B9A), Color(0xFFF3E5F5))
         ElderDestination.Medicines -> NavMeta(tr(lang, "medicines"), Icons.Outlined.MedicalServices, Color(0xFF2E7D32), Color(0xFFE8F5E9))
         ElderDestination.Vitals -> NavMeta(tr(lang, "vitals"), Icons.Outlined.MonitorHeart, Color(0xFFC62828), Color(0xFFFFEBEE))
+        ElderDestination.Settings -> NavMeta(tr(lang, "settings"), Icons.Outlined.Settings, ElderNavy, Color(0xFFE8EAF6))
     }
     ActionCard(
         icon = meta.icon,
         label = meta.label,
         tint = meta.tint,
         bg = meta.bg,
-        modifier = modifier.height(170.dp),
+        modifier = modifier.height(200.dp),
         onClick = { onNavigate(destination) }
     )
 }
