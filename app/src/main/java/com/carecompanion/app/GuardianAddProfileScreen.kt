@@ -334,19 +334,51 @@ fun GuardianAddProfileScreen(
                         horizontalArrangement = Arrangement.spacedBy(18.dp),
                         verticalAlignment = Alignment.Top,
                     ) {
-                        ProfileAvatarUpload(
-                            photoUri = photoUri,
-                            avatarIcon = avatarOptions[avatarIndex].icon,
-                            avatarBg = avatarOptions[avatarIndex].bg,
-                            onPickPhoto = {
-                                pickImage.launch(
-                                    PickVisualMediaRequest(
-                                        ActivityResultContracts.PickVisualMedia.ImageOnly,
-                                    ),
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            ProfileAvatarUpload(
+                                photoUri = photoUri,
+                                avatarIcon = avatarOptions[avatarIndex].icon,
+                                avatarBg = avatarOptions[avatarIndex].bg,
+                                onPickPhoto = {
+                                    pickImage.launch(
+                                        PickVisualMediaRequest(
+                                            ActivityResultContracts.PickVisualMedia.ImageOnly,
+                                        ),
+                                    )
+                                },
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                SoftSecondaryButton(
+                                    onClick = {
+                                        pickImage.launch(
+                                            PickVisualMediaRequest(
+                                                ActivityResultContracts.PickVisualMedia.ImageOnly,
+                                            ),
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Outlined.UploadFile,
+                                    label = stringResource(R.string.guardian_upload_photo),
+                                    contentDescription = stringResource(R.string.guardian_upload_photo),
                                 )
-                            },
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
+                                SoftSecondaryButton(
+                                    onClick = { showAvatarDialog = true },
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Outlined.Person,
+                                    label = stringResource(R.string.guardian_choose_avatar),
+                                    contentDescription = stringResource(R.string.guardian_choose_avatar),
+                                    outlined = true,
+                                )
+                            }
+                        }
                         Column(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -378,32 +410,6 @@ fun GuardianAddProfileScreen(
                                 shape = RoundedCornerShape(16.dp),
                                 colors = outlinedFieldColors(),
                             )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            ) {
-                                SoftSecondaryButton(
-                                    onClick = {
-                                        pickImage.launch(
-                                            PickVisualMediaRequest(
-                                                ActivityResultContracts.PickVisualMedia.ImageOnly,
-                                            ),
-                                        )
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    icon = Icons.Outlined.UploadFile,
-                                    label = stringResource(R.string.guardian_upload_photo),
-                                    contentDescription = stringResource(R.string.guardian_upload_photo),
-                                )
-                                SoftSecondaryButton(
-                                    onClick = { showAvatarDialog = true },
-                                    modifier = Modifier.weight(1f),
-                                    icon = Icons.Outlined.Person,
-                                    label = stringResource(R.string.guardian_choose_avatar),
-                                    contentDescription = stringResource(R.string.guardian_choose_avatar),
-                                    outlined = true,
-                                )
-                            }
                             if (photoUri != null) {
                                 TextButton(
                                     onClick = { photoUri = null },
@@ -440,7 +446,7 @@ fun GuardianAddProfileScreen(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.Top,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         OutlinedTextField(
                             value = phone,
@@ -485,7 +491,7 @@ fun GuardianAddProfileScreen(
                                     )
                                 }
                             },
-                            modifier = Modifier.heightIn(min = 56.dp),
+                            modifier = Modifier.heightIn(min = 56.dp, max = 56.dp),
                         )
                     }
                 }
@@ -499,7 +505,6 @@ fun GuardianAddProfileScreen(
                     trailingHeader = {
                         TextButton(
                             onClick = { openContactPicker() },
-                            modifier = Modifier.padding(top = 2.dp),
                         ) {
                             Icon(
                                 Icons.Outlined.UploadFile,
@@ -748,7 +753,7 @@ private fun SectionCard(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Box(
@@ -785,7 +790,16 @@ private fun SectionCard(
                         ),
                     )
                 }
-                trailingHeader?.invoke()
+            }
+            trailingHeader?.let { trail ->
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    trail()
+                }
             }
             Spacer(modifier = Modifier.height(18.dp))
             content()

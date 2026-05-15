@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -62,6 +63,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -74,6 +76,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.carecompanion.app.ui.theme.CareGradients
 import com.carecompanion.app.ui.theme.CareGreen
 
 private val NavyDeep = Color(0xFF14213D)
@@ -91,9 +94,15 @@ fun GuardianWellnessSosScreen(
 ) {
     var alertDismissed by remember { mutableStateOf(false) }
 
-    Scaffold(
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(CareGradients.pageSoftWash()),
+    ) {
+        Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = SoftBg,
+        containerColor = Color.Transparent,
         bottomBar = {
             GuardianBottomBar(
                 activeTab = BottomTab.Alerts,
@@ -114,13 +123,16 @@ fun GuardianWellnessSosScreen(
             )
 
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset(y = (-26).dp)
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 24.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-26).dp)
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                WellnessDashboardMetrics()
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -128,14 +140,14 @@ fun GuardianWellnessSosScreen(
                 ) {
                     Column {
                         Text(
-                            text = "SOS alerts",
+                            text = "Safety overview",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = NavyDeep.copy(alpha = 0.55f),
                             letterSpacing = 0.6.sp,
                         )
                         Text(
-                            text = if (!alertDismissed) "Needs your attention" else "Monitoring",
+                            text = if (!alertDismissed) "Incident open" else "All quiet",
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             color = NavyDeep,
@@ -148,9 +160,9 @@ fun GuardianWellnessSosScreen(
                             shadowElevation = 4.dp,
                         ) {
                             Text(
-                                text = "1 active",
+                                text = "SOS LIVE",
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                fontSize = 12.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
                             )
@@ -164,7 +176,9 @@ fun GuardianWellnessSosScreen(
                         onDismiss = { alertDismissed = true },
                     )
 
-                    IncidentProtocolCard()
+                    EmergencyQuickActionsRow(profileName = profile.name)
+
+                    IncidentProtocolCard(profileName = profile.name)
                 } else {
                     AllClearCard(profileName = profile.name)
                     WellnessSummaryCard()
@@ -172,6 +186,7 @@ fun GuardianWellnessSosScreen(
             }
 
             Spacer(Modifier.height(8.dp))
+        }
         }
     }
 }
@@ -211,39 +226,61 @@ private fun EmergencyResponseHero(
     )
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        EmergencyDeep,
-                        EmergencyRed,
-                        Color(0xFFFCA5A5).copy(alpha = 0.35f),
-                        SoftBg,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors =
+                            listOf(
+                                Color(0xFF9B1C1C),
+                                EmergencyRed,
+                                NavyDeep,
+                                Color(0xFF1E40AF),
+                            ),
                     ),
                 ),
-            ),
     ) {
         Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFFFF6B6B).copy(alpha = glowPulse),
-                            Color.Transparent,
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    Color.Transparent,
+                                    Color.Transparent,
+                                    SoftBg.copy(alpha = 0.92f),
+                                    SoftBg,
+                                ),
                         ),
-                        center = Offset(0.5f, 0.35f),
-                        radius = 520f,
                     ),
-                ),
+        )
+
+        Box(
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors =
+                                listOf(
+                                    Color(0xFFFF6B6B).copy(alpha = glowPulse * 0.45f),
+                                    Color.Transparent,
+                                ),
+                            center = Offset(0.35f, 0.25f),
+                            radius = 520f,
+                        ),
+                    ),
         )
 
         Column(
-            modifier = Modifier
-                .statusBarsPadding()
-                .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 52.dp),
+            modifier =
+                Modifier
+                    .statusBarsPadding()
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 52.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(
@@ -259,15 +296,35 @@ private fun EmergencyResponseHero(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Emergency monitoring",
-                        fontSize = 18.sp,
+                        text = "Wellness & SOS",
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                     )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(top = 6.dp),
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF4ADE80)),
+                        )
+                        Text(
+                            text = "Live monitoring · Connected",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.92f),
+                        )
+                    }
                     Text(
                         text = profileName,
                         fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.88f),
+                        color = Color.White.copy(alpha = 0.82f),
+                        modifier = Modifier.padding(top = 4.dp),
                     )
                 }
             }
@@ -335,7 +392,6 @@ private fun FloatingSosAlertCard(
     profile: GuardianProfile,
     onDismiss: () -> Unit,
 ) {
-    val ctx = LocalContext.current
     val trackPulse by rememberInfiniteTransition(label = "track").animateFloat(
         initialValue = 0.85f,
         targetValue = 1f,
@@ -379,7 +435,7 @@ private fun FloatingSosAlertCard(
                             modifier = Modifier.size(18.dp),
                         )
                         Text(
-                            text = "Critical · SOS",
+                            text = "Critical severity",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = EmergencyDeep,
@@ -456,7 +512,7 @@ private fun FloatingSosAlertCard(
                         fontWeight = FontWeight.Medium,
                     )
                     Text(
-                        text = "Received · 10:31:42 AM · synced",
+                        text = "Guardian push · Delivered",
                         fontSize = 12.sp,
                         color = Color(0xFF64748B),
                         modifier = Modifier.padding(top = 4.dp),
@@ -519,42 +575,6 @@ private fun FloatingSosAlertCard(
                 color = Color(0xFF94A3B8),
                 modifier = Modifier.padding(top = 2.dp),
             )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                GradientCtaButton(
-                    text = "Call now",
-                    icon = Icons.Outlined.Call,
-                    gradient = CallGradient,
-                    onClick = {
-                        runCatching {
-                            ctx.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${Uri.encode("112")}")))
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-                GradientCtaButton(
-                    text = "View location",
-                    icon = Icons.Outlined.Map,
-                    gradient = MapGradient,
-                    onClick = {
-                        val query = Uri.encode("${profile.name} — care location")
-                        val geoUri = Uri.parse("geo:0,0?q=$query")
-                        runCatching {
-                            ctx.startActivity(Intent(Intent.ACTION_VIEW, geoUri))
-                        }.onFailure {
-                            runCatching {
-                                ctx.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps")),
-                                )
-                            }
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-            }
 
             OutlinedButton(
                 onClick = onDismiss,
@@ -772,11 +792,13 @@ private fun GradientCtaButton(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .height(50.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .background(gradient)
-            .clickable(onClick = onClick),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(min = 52.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(gradient)
+                .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Row(
@@ -807,7 +829,7 @@ private fun GradientCtaButton(
 }
 
 @Composable
-private fun IncidentProtocolCard() {
+private fun IncidentProtocolCard(profileName: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
@@ -845,40 +867,227 @@ private fun IncidentProtocolCard() {
                         color = NavyDeep,
                     )
                     Text(
-                        text = "What's already in motion",
+                        text = "Follow these steps while responders coordinate.",
                         fontSize = 12.sp,
                         color = Color(0xFF64748B),
                     )
                 }
             }
 
-            ProtocolRow(
-                icon = Icons.Outlined.Sms,
-                iconBg = Color(0xFFFFF7ED),
-                iconTint = Color(0xFFEA580C),
-                title = "Contacts messaged",
-                body = "Primary and backup numbers received an SMS with alert time.",
-            )
-            ProtocolRow(
-                icon = Icons.Outlined.GpsFixed,
+            ProtocolStepRow(
+                stepLabel = "Step 1",
+                icon = Icons.Outlined.Call,
                 iconBg = Color(0xFFEFF6FF),
                 iconTint = Color(0xFF2563EB),
-                title = "GPS lock & logging",
-                body = "High-accuracy location is on; this event is timestamped in the log.",
+                title = "Call",
+                body = "Reach $profileName immediately and confirm they’re responsive.",
             )
-            ProtocolRow(
-                icon = Icons.Outlined.CheckCircle,
-                iconBg = Color(0xFFF0FDF4),
-                iconTint = CareGreen,
-                title = "Stay available",
-                body = "Keep your line open — the app will keep updating location while active.",
+            ProtocolStepRow(
+                stepLabel = "Step 2",
+                icon = Icons.Outlined.LocationOn,
+                iconBg = Color(0xFFFFF7ED),
+                iconTint = Color(0xFFEA580C),
+                title = "Check location",
+                body = "Open live tracking or maps to verify where they are relative to home or care stops.",
+            )
+            ProtocolStepRow(
+                stepLabel = "Step 3",
+                icon = Icons.Outlined.Sms,
+                iconBg = Color(0xFFFFF1F2),
+                iconTint = EmergencyRed,
+                title = "Notify emergency contact",
+                body = "Loop in your designated responder so someone trusted can assist or attend on-site.",
             )
         }
     }
 }
 
 @Composable
-private fun ProtocolRow(
+private fun WellnessDashboardMetrics() {
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .shadow(8.dp, RoundedCornerShape(22.dp)),
+        shape = RoundedCornerShape(22.dp),
+        color = Color.White,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "Wellness summary",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = NavyDeep,
+                )
+                Text(
+                    text = "Safe · Active · Medication · Last checked",
+                    fontSize = 12.sp,
+                    color = Color(0xFF64748B),
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                WellnessMetricTile(
+                    label = "Safe",
+                    value = "Stable vitals",
+                    accent = Color(0xFF10B981),
+                    modifier = Modifier.weight(1f),
+                )
+                WellnessMetricTile(
+                    label = "Active",
+                    value = "Mobile today",
+                    accent = Color(0xFF2563EB),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                WellnessMetricTile(
+                    label = "Medication",
+                    value = "2 pending",
+                    accent = Color(0xFFF97316),
+                    modifier = Modifier.weight(1f),
+                )
+                WellnessMetricTile(
+                    label = "Last checked",
+                    value = "Just now",
+                    accent = NavyDeep.copy(alpha = 0.65f),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WellnessMetricTile(
+    label: String,
+    value: String,
+    accent: Color,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        color = accent.copy(alpha = 0.08f),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.22f)),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = label.uppercase(),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = accent,
+                letterSpacing = 0.8.sp,
+            )
+            Text(
+                text = value,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = NavyDeep,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmergencyQuickActionsRow(profileName: String) {
+    val ctx = LocalContext.current
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "Respond now",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = NavyDeep.copy(alpha = 0.65f),
+            letterSpacing = 0.5.sp,
+        )
+        GradientCtaButton(
+            text = "Call Elder",
+            icon = Icons.Outlined.Call,
+            gradient = CallGradient,
+            onClick = {
+                runCatching {
+                    ctx.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:")))
+                }
+            },
+        )
+        GradientCtaButton(
+            text = "View Location",
+            icon = Icons.Outlined.Map,
+            gradient = MapGradient,
+            onClick = {
+                val query = Uri.encode("$profileName — care location")
+                val geoUri = Uri.parse("geo:0,0?q=$query")
+                runCatching {
+                    ctx.startActivity(Intent(Intent.ACTION_VIEW, geoUri))
+                }.onFailure {
+                    runCatching {
+                        ctx.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps")),
+                        )
+                    }
+                }
+            },
+        )
+        OutlinedButton(
+            onClick = {
+                val send =
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_SUBJECT, "Care alert — $profileName")
+                        putExtra(
+                            Intent.EXTRA_TEXT,
+                            "Quick update regarding $profileName:\n\n",
+                        )
+                    }
+                ctx.startActivity(Intent.createChooser(send, "Notify contact"))
+            },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 52.dp),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(2.dp, EmergencyRed.copy(alpha = 0.85f)),
+            colors =
+                androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                    contentColor = EmergencyRed,
+                ),
+        ) {
+            Icon(Icons.Outlined.Sms, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(10.dp))
+            Text("Notify Contact", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        }
+    }
+}
+
+@Composable
+private fun ProtocolStepRow(
+    stepLabel: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     iconBg: Color,
     iconTint: Color,
@@ -886,35 +1095,59 @@ private fun ProtocolRow(
     body: String,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(iconBg),
-            contentAlignment = Alignment.Center,
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.width(58.dp),
         ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(22.dp),
-            )
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = NavyDeep.copy(alpha = 0.08f),
+            ) {
+                Text(
+                    text = stepLabel,
+                    modifier =
+                        Modifier.padding(
+                            horizontal = 10.dp,
+                            vertical = 6.dp,
+                        ),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = NavyDeep,
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Box(
+                modifier =
+                    Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(iconBg),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
                 color = NavyDeep,
             )
             Text(
                 text = body,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
                 color = Color(0xFF64748B),
-                lineHeight = 16.sp,
+                lineHeight = 18.sp,
+                modifier = Modifier.padding(top = 4.dp),
             )
         }
     }

@@ -74,6 +74,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.carecompanion.app.ui.theme.CareGradients
 import com.carecompanion.app.ui.theme.CareGreen
 
 private val NavyDeep = Color(0xFF14213D)
@@ -149,9 +150,15 @@ fun GuardianManageContactsScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = GuardianBg,
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(CareGradients.pageSoftWash()),
+    ) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onAddContact,
@@ -298,6 +305,7 @@ fun GuardianManageContactsScreen(
                 )
             }
         }
+    }
     }
 
     confirmDeleteIndex?.let { idx ->

@@ -66,6 +66,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.carecompanion.app.ui.theme.CareGreen
@@ -369,109 +370,123 @@ private fun PatientOverviewCard(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .shadow(10.dp, CircleShape)
-                    .clip(CircleShape)
-                    .border(
-                        width = 3.dp,
-                        brush = Brush.linearGradient(listOf(SoftBlue, Mint)),
-                        shape = CircleShape,
-                    )
-                    .background(profile.bg.copy(alpha = 0.35f)),
-                contentAlignment = Alignment.Center,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                if (profile.photoUri != null) {
-                    UriBitmapImage(
-                        uri = profile.photoUri,
-                        contentDescription = profile.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                } else {
-                    Icon(
-                        profile.icon,
-                        contentDescription = null,
-                        tint = Navy.copy(alpha = 0.85f),
-                        modifier = Modifier.size(44.dp),
-                    )
-                }
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = profile.name,
-                    fontSize = 21.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                    maxLines = 2,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                Box(
+                    modifier = Modifier
+                        .size(96.dp)
+                        .shadow(10.dp, CircleShape)
+                        .clip(CircleShape)
+                        .border(
+                            width = 3.dp,
+                            brush = Brush.linearGradient(listOf(SoftBlue, Mint)),
+                            shape = CircleShape,
+                        )
+                        .background(profile.bg.copy(alpha = 0.35f)),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF22C55E).copy(alpha = liveAlpha)),
-                    )
+                    if (profile.photoUri != null) {
+                        UriBitmapImage(
+                            uri = profile.photoUri,
+                            contentDescription = profile.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Icon(
+                            profile.icon,
+                            contentDescription = null,
+                            tint = Navy.copy(alpha = 0.85f),
+                            modifier = Modifier.size(44.dp),
+                        )
+                    }
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Live · At home",
-                        fontSize = 14.sp,
+                        text = profile.name,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = CareGreen,
+                        color = TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 24.sp,
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF22C55E).copy(alpha = liveAlpha)),
+                        )
+                        Text(
+                            text = "Live · At home",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = CareGreen,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Last updated · 15 minutes ago",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = TextSub.copy(alpha = 0.85f),
-                    letterSpacing = 0.15.sp,
-                )
+
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = Mint.copy(alpha = 0.14f),
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp,
+                    border = BorderStroke(
+                        width = 1.5.dp,
+                        brush = Brush.linearGradient(listOf(SoftBlue, Mint)),
+                    ),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Icon(
+                            Icons.Outlined.Shield,
+                            contentDescription = null,
+                            tint = Navy,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Text(
+                            text = "SAFE",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Navy,
+                            letterSpacing = 1.sp,
+                            maxLines = 1,
+                        )
+                    }
+                }
             }
 
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = Mint.copy(alpha = 0.14f),
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
-                border = BorderStroke(
-                    width = 1.5.dp,
-                    brush = Brush.linearGradient(listOf(SoftBlue, Mint)),
-                ),
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Icon(
-                        Icons.Outlined.Shield,
-                        contentDescription = null,
-                        tint = Navy,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Text(
-                        text = "SAFE",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Navy,
-                        letterSpacing = 1.sp,
-                    )
-                }
-            }
+            Text(
+                text = "Last updated · 15 minutes ago",
+                modifier = Modifier.fillMaxWidth(),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = TextSub.copy(alpha = 0.85f),
+                lineHeight = 16.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

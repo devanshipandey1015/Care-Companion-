@@ -7,11 +7,15 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.carecompanion.app.ui.theme.CareCompanionTheme
+import com.carecompanion.app.ui.theme.CareGradients
 
 sealed class AppScreen {
     object Login                                                         : AppScreen()
@@ -34,7 +38,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CareCompanionTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(CareGradients.pageSoftWash()),
+                ) {
+                    Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
                     var screen by remember { mutableStateOf<AppScreen>(AppScreen.Login) }
                     val guardianProfiles   = remember { mutableStateListOf<GuardianProfile>() }
                     val contactsByProfile  = remember { mutableStateMapOf<String, List<ManagedContact>>() }
@@ -213,6 +223,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
+                }
                 }
             }
         }
